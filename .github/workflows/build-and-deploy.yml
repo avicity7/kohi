@@ -1,18 +1,19 @@
-name: deploy-to-github-pages
+name: GitHub Pages
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:
+    branches:
+      - main  # Set a branch name to trigger deployment
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
+  deploy:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: setup node.js
         uses: actions/setup-node@v3.6.0
@@ -24,8 +25,7 @@ jobs:
       # ビルド実行、静的リソースを作る
       - name: build static resources
         run: npm run build
-          
-      # GitHub Pagesにデプロイする
+
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
         with:
