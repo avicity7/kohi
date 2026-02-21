@@ -16,6 +16,15 @@
   grind: 11
   notes: "Super dark bean, hints of charcoal with no flowers nor fruits to be found. Perhaps chocolate."
 
+- bean: "Barista Beans"
+  roaster: "Bo's"
+  method: espresso
+  dose_g: 18
+  yield_g: 45
+  time_s: 25-26
+  grind: 5
+  notes: "Weird roast, medium-dark blend but has nothing but nutty notes and perhaps more charcoal than even CyTEC beans."
+
 # - bean: "Colombia Huila"
 #   roaster: "Onyx"
 #   method: pourover
