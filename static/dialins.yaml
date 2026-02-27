@@ -1,6 +1,13 @@
-- bean: "Colombia Test Roast"
-  roaster: "20grams"
+- bean: "Sagada Arabica"
+  roaster: "Capital Grains"
   method: espresso
+  dose_g: 16
+  yield_g: 35
+  time_s: 25-26
+  grind: 7
+  notes: "Standard taste profile, slightly stronger on the caramel side. Grind size subject to change, roast date 26/02/18. Grind size adjusted from previous dial-ins due to flat portafilter basket size."
+
+- bean: "Colombia Test Roast"
   dose_g: 18
   yield_g: 54
   time_s: 28-32
