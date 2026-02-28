@@ -1,0 +1,74 @@
+- bean: "Sagada Arabica"
+  roaster: "Capital Grains"
+  method: espresso
+  dose_g: 16
+  yield_g: 35
+  time_s: 25-26
+  grind: 7
+  notes: "Standard taste profile, slightly stronger on the caramel side. Grind size subject to change, roast date 26/02/18. Grind size adjusted from previous dial-ins due to flat portafilter basket size."
+
+- bean: "Colombia Test Roast"
+  roaster: "20grams"
+  method: espresso
+  dose_g: 18
+  yield_g: 54
+  time_s: 28-32
+  grind: 3
+  notes: "As this is a very light roast, more extraction volume and time are needed."
+
+- bean: "CyTEC Beans"
+  roaster: "Daiou"
+  method: espresso
+  dose_g: 18
+  yield_g: 45
+  time_s: 25-26
+  grind: 10
+  notes: "Super dark bean, hints of charcoal with no flowers nor fruits to be found. Perhaps chocolate."
+
+- bean: "Barista Beans"
+  roaster: "Bo's"
+  method: espresso
+  dose_g: 18
+  yield_g: 45
+  time_s: 25-26
+  grind: 5
+  notes: "Weird roast, medium-dark blend but has nothing but nutty notes and perhaps more charcoal than even CyTEC beans."
+
+# - bean: "Colombia Huila"
+#   roaster: "Onyx"
+#   method: pourover
+#   dose_g: 15
+#   water_g: 250
+#   grind: 24
+#   temperature_c: 96
+#   bloom_time_s: 45
+#   total_time_s: 210
+#   brewer: "V60"
+#   notes: "Caramel, red apple, smooth body"
+
+# - bean: "Ethiopia Yirgacheffe"
+#   roaster: "Square Mile"
+#   method: pourover
+#   method_name: "4:6 Method"
+#   dose_g: 20
+#   water_g: 300
+#   grind: 22
+#   temperature_c: 92
+#   brewer: "V60"
+#   notes: "Bright acidity, floral jasmine notes, clean finish"
+#   pours:
+#     - water_g: 60
+#       time_s: 0
+#       notes: "Bloom"
+#     - water_g: 60
+#       time_s: 45
+#       notes: "First pour (40%)"
+#     - water_g: 60
+#       time_s: 90
+#       notes: "Second pour (40%)"
+#     - water_g: 60
+#       time_s: 135
+#       notes: "Third pour (20%)"
+#     - water_g: 60
+#       time_s: 180
+#       notes: "Fourth pour (20%)"
