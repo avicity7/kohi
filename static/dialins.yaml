@@ -1,5 +1,5 @@
-- bean: "Culinary Exchange"
-  roaster: "70/30 Blend"
+- bean: "70/30 Blend"
+  roaster: "Culinary Exchange"
   method: espresso
   dose_g: 18
   yield_g: 31
