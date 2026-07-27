@@ -1,3 +1,12 @@
+- bean: "Culinary Exchange"
+  roaster: "70/30 Blend"
+  method: espresso
+  dose_g: 18
+  yield_g: 31
+  time_s: 25
+  grind(K6): 27
+  notes: "Blend of FC+/French Arabica and City+ Robusta, lots of spice, chocolate with some earthiness."
+
 - bean: "Forte"
   roaster: "Jewel Coffee Cafe Monza"
   method: espresso
