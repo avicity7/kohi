@@ -4,7 +4,6 @@ import * as lib from './index.js';
 
 describe('formatRange', () => {
 	it('replaces a hyphen between numbers with an en dash', () => {
-		assert.equal(typeof lib.formatRange, 'function');
 		assert.equal(lib.formatRange('7-8'), '7–8');
 		assert.equal(lib.formatRange('25 - 26'), '25–26');
 	});
@@ -20,11 +19,10 @@ describe('matchesQuery', () => {
 		bean: 'Grizzly Claw',
 		roaster: 'Kick Horse',
 		notes: 'Dark roast with little bitterness.',
-		'grind(K6)': 28
+		grinds: [{ type: 'K6', setting: '28' }]
 	};
 
-	it('matches any field case-insensitively', () => {
-		assert.equal(typeof lib.matchesQuery, 'function');
+	it('matches any field case-insensitively, including grinder names', () => {
 		assert.equal(lib.matchesQuery(entry, 'grizzly'), true);
 		assert.equal(lib.matchesQuery(entry, 'KICK'), true);
 		assert.equal(lib.matchesQuery(entry, 'bitterness'), true);
@@ -44,29 +42,27 @@ describe('matchesQuery', () => {
 
 describe('getGrinderNames', () => {
 	it('returns unique grinder names in first-seen order', () => {
-		assert.equal(typeof lib.getGrinderNames, 'function');
 		const entries = [
-			{ 'grind(Breville)': 7, 'grind(K6)': 28 },
-			{ grind: 14 },
-			{ 'grind(K6)': 30 }
+			{ grinds: [{ type: 'Breville', setting: '7' }, { type: 'K6', setting: '28' }] },
+			{ grinds: [{ type: null, setting: '14' }] },
+			{ grinds: [{ type: 'K6', setting: '30' }] }
 		];
 		assert.deepEqual(lib.getGrinderNames(entries), ['Breville', 'K6']);
 	});
 
 	it('returns an empty list when no entry names a grinder', () => {
-		assert.deepEqual(lib.getGrinderNames([{ grind: 7 }, { bean: 'X' }]), []);
+		assert.deepEqual(lib.getGrinderNames([{ grinds: [{ type: null, setting: '7' }] }, { bean: 'X' }]), []);
 	});
 });
 
 describe('filterEntries', () => {
 	const entries = [
-		{ bean: 'Espresso', roaster: 'Lavazza', method: 'espresso', 'grind(K6)': 28 },
-		{ bean: 'Grizzly Claw', roaster: 'Kick Horse', method: 'espresso', grind: 14 },
-		{ bean: 'Colombia Huila', roaster: 'Onyx', method: 'pourover', 'grind(Breville)': 24 }
+		{ bean: 'Espresso', roaster: 'Lavazza', method: 'espresso', grinds: [{ type: 'K6', setting: '28' }] },
+		{ bean: 'Grizzly Claw', roaster: 'Kick Horse', method: 'espresso', grinds: [{ type: null, setting: '14' }] },
+		{ bean: 'Colombia Huila', roaster: 'Onyx', method: 'pourover', grinds: [{ type: 'Breville', setting: '24' }] }
 	];
 
 	it('returns everything with no filters', () => {
-		assert.equal(typeof lib.filterEntries, 'function');
 		assert.deepEqual(lib.filterEntries(entries, {}), entries);
 		assert.deepEqual(lib.filterEntries(entries), entries);
 	});
@@ -90,29 +86,18 @@ describe('filterEntries', () => {
 			lib.filterEntries(entries, { query: 'lavazza', method: 'espresso', grinder: 'K6' }).map(e => e.bean),
 			['Espresso']
 		);
-		assert.deepEqual(
-			lib.filterEntries(entries, { query: 'lavazza', method: 'pourover' }),
-			[]
-		);
+		assert.deepEqual(lib.filterEntries(entries, { query: 'lavazza', method: 'pourover' }), []);
 	});
 });
 
 describe('getGrinds', () => {
-	it('returns typed grind settings in entry order', () => {
-		assert.equal(typeof lib.getGrinds, 'function');
-		assert.deepEqual(lib.getGrinds({ 'grind(Niche Zero)': 15, 'grind(DF64)': '7-8' }), [
-			{ setting: 15, type: 'Niche Zero' },
-			{ setting: '7-8', type: 'DF64' }
-		]);
+	it('returns the grinds array as-is', () => {
+		const grinds = [{ type: 'K6', setting: '27' }, { type: null, setting: '7-8' }];
+		assert.deepEqual(lib.getGrinds({ grinds }), grinds);
 	});
 
-	it('falls back to legacy grind setting without a type', () => {
-		assert.equal(typeof lib.getGrinds, 'function');
-		assert.deepEqual(lib.getGrinds({ grind: '14-15' }), [{ setting: '14-15', type: null }]);
-	});
-
-	it('omits grind when neither format is present', () => {
-		assert.equal(typeof lib.getGrinds, 'function');
+	it('returns an empty array when grinds is missing or null', () => {
 		assert.deepEqual(lib.getGrinds({ bean: 'Espresso' }), []);
+		assert.deepEqual(lib.getGrinds({ grinds: null }), []);
 	});
 });
