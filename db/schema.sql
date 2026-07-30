@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS dialins (
+	id            int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	bean          text NOT NULL,
+	roaster       text NOT NULL,
+	method        text NOT NULL CHECK (method IN ('espresso', 'pourover')),
+	method_name   text,
+	dose_g        numeric,
+	yield_g       numeric,
+	time_s        text,
+	water_g       numeric,
+	temperature_c numeric,
+	bloom_time_s  text,
+	total_time_s  text,
+	brewer        text,
+	grinds        jsonb NOT NULL DEFAULT '[]',
+	pours         jsonb,
+	notes         text,
+	created_at    timestamptz NOT NULL DEFAULT now(),
+	updated_at    timestamptz NOT NULL DEFAULT now()
+);
