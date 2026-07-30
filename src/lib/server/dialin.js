@@ -62,3 +62,113 @@ export function toYamlShape(d) {
 	if (d.notes != null) out.notes = d.notes;
 	return out;
 }
+
+const RANGE = /^\d+(\.\d+)?(\s*-\s*\d+(\.\d+)?)?$/;
+const ECHO_FIELDS = [
+	'bean', 'roaster', 'method', 'method_name', 'dose_g', 'yield_g', 'time_s',
+	'water_g', 'temperature_c', 'bloom_time_s', 'total_time_s', 'brewer', 'notes'
+];
+
+function field(formData, name) {
+	const value = formData.get(name);
+	if (typeof value !== 'string') return null;
+	const trimmed = value.trim();
+	return trimmed === '' ? null : trimmed;
+}
+
+export function parseDialinForm(formData) {
+	const errors = {};
+
+	const bean = field(formData, 'bean');
+	const roaster = field(formData, 'roaster');
+	const method = field(formData, 'method');
+	if (!bean) errors.bean = 'Bean is required.';
+	if (!roaster) errors.roaster = 'Roaster is required.';
+	if (method !== 'espresso' && method !== 'pourover') errors.method = 'Pick espresso or pour over.';
+
+	const numeric = (name, label) => {
+		const raw = field(formData, name);
+		if (raw === null) return null;
+		const n = Number(raw);
+		if (!Number.isFinite(n) || n <= 0) {
+			errors[name] = `${label} must be a positive number.`;
+			return null;
+		}
+		return n;
+	};
+	const rangeText = (name, label) => {
+		const raw = field(formData, name);
+		if (raw === null) return null;
+		if (!RANGE.test(raw)) {
+			errors[name] = `${label} must be a number or a range like 25-30.`;
+			return null;
+		}
+		return raw;
+	};
+
+	const dose_g = numeric('dose_g', 'Dose');
+	const yield_g = numeric('yield_g', 'Yield');
+	const water_g = numeric('water_g', 'Water');
+	const temperature_c = numeric('temperature_c', 'Temperature');
+	const time_s = rangeText('time_s', 'Time');
+	const bloom_time_s = rangeText('bloom_time_s', 'Bloom time');
+	const total_time_s = rangeText('total_time_s', 'Total time');
+
+	const grinds = [];
+	const grindTypes = formData.getAll('grind_type').map(v => String(v).trim());
+	const grindSettings = formData.getAll('grind_setting').map(v => String(v).trim());
+	for (let i = 0; i < Math.max(grindTypes.length, grindSettings.length); i++) {
+		const type = grindTypes[i] || null;
+		const setting = grindSettings[i] || '';
+		if (!type && !setting) continue;
+		if (!setting || !RANGE.test(setting)) {
+			errors.grinds = 'Every grind row needs a setting — a number or a range like 7-8.';
+			continue;
+		}
+		grinds.push({ type, setting });
+	}
+
+	const pours = [];
+	const pourWater = formData.getAll('pour_water').map(v => String(v).trim());
+	const pourTime = formData.getAll('pour_time').map(v => String(v).trim());
+	const pourNotes = formData.getAll('pour_notes').map(v => String(v).trim());
+	for (let i = 0; i < Math.max(pourWater.length, pourTime.length, pourNotes.length); i++) {
+		if (!pourWater[i] && !pourTime[i] && !pourNotes[i]) continue;
+		const water = Number(pourWater[i]);
+		const time = Number(pourTime[i]);
+		const waterOk = pourWater[i] && Number.isFinite(water) && water > 0;
+		const timeOk = pourTime[i] !== '' && pourTime[i] !== undefined && Number.isFinite(time) && time >= 0;
+		if (!waterOk || !timeOk) {
+			errors.pours = 'Every pour needs water (g) and time (s).';
+			continue;
+		}
+		pours.push({ water_g: water, time_s: time, notes: pourNotes[i] || null });
+	}
+
+	if (Object.keys(errors).length > 0) {
+		const values = {};
+		for (const name of ECHO_FIELDS) values[name] = String(formData.get(name) ?? '');
+		return { ok: false, errors, values };
+	}
+
+	return {
+		ok: true,
+		dialin: {
+			bean,
+			roaster,
+			method,
+			method_name: method === 'pourover' ? field(formData, 'method_name') : null,
+			dose_g,
+			yield_g: method === 'espresso' ? yield_g : null,
+			time_s,
+			water_g: method === 'pourover' ? water_g : null,
+			temperature_c,
+			bloom_time_s: method === 'pourover' ? bloom_time_s : null,
+			total_time_s: method === 'pourover' ? total_time_s : null,
+			brewer: method === 'pourover' ? field(formData, 'brewer') : null,
+			grinds,
+			pours: method === 'pourover' && pours.length > 0 ? pours : null,
+			notes: field(formData, 'notes')
+		}
+	};
+}

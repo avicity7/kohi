@@ -89,3 +89,112 @@ describe('toYamlShape', () => {
 		assert.deepEqual(fromYamlShape(toYamlShape(d)), d);
 	});
 });
+
+import { parseDialinForm } from './dialin.js';
+
+function fd(fields, multi = {}) {
+	const data = new FormData();
+	for (const [k, v] of Object.entries(fields)) data.append(k, v);
+	for (const [k, list] of Object.entries(multi)) for (const v of list) data.append(k, v);
+	return data;
+}
+
+describe('parseDialinForm', () => {
+	it('parses a complete espresso form', () => {
+		const result = parseDialinForm(
+			fd(
+				{ bean: 'Forte', roaster: 'Jewel', method: 'espresso', dose_g: '18', yield_g: '35', time_s: '30', notes: 'Nice.' },
+				{ grind_type: ['K6'], grind_setting: ['26'] }
+			)
+		);
+		assert.equal(result.ok, true);
+		assert.deepEqual(result.dialin, {
+			bean: 'Forte', roaster: 'Jewel', method: 'espresso', method_name: null,
+			dose_g: 18, yield_g: 35, time_s: '30',
+			water_g: null, temperature_c: null, bloom_time_s: null, total_time_s: null, brewer: null,
+			grinds: [{ type: 'K6', setting: '26' }], pours: null, notes: 'Nice.'
+		});
+	});
+
+	it('requires bean, roaster, and a valid method', () => {
+		const result = parseDialinForm(fd({ bean: ' ', roaster: '', method: 'siphon' }));
+		assert.equal(result.ok, false);
+		assert.ok(result.errors.bean);
+		assert.ok(result.errors.roaster);
+		assert.ok(result.errors.method);
+	});
+
+	it('rejects non-positive numbers and bad ranges', () => {
+		const result = parseDialinForm(
+			fd({ bean: 'X', roaster: 'Y', method: 'espresso', dose_g: '-1', time_s: '30-' })
+		);
+		assert.equal(result.ok, false);
+		assert.ok(result.errors.dose_g);
+		assert.ok(result.errors.time_s);
+	});
+
+	it('accepts ranges with spaces and drops empty grind rows', () => {
+		const result = parseDialinForm(
+			fd(
+				{ bean: 'X', roaster: 'Y', method: 'espresso', time_s: '25 - 26' },
+				{ grind_type: ['', 'K6'], grind_setting: ['', '27'] }
+			)
+		);
+		assert.equal(result.ok, true);
+		assert.equal(result.dialin.time_s, '25 - 26');
+		assert.deepEqual(result.dialin.grinds, [{ type: 'K6', setting: '27' }]);
+	});
+
+	it('flags a grind row with a type but no setting', () => {
+		const result = parseDialinForm(
+			fd({ bean: 'X', roaster: 'Y', method: 'espresso' }, { grind_type: ['K6'], grind_setting: [''] })
+		);
+		assert.equal(result.ok, false);
+		assert.ok(result.errors.grinds);
+	});
+
+	it('parses pour-over with pours; time 0 is allowed', () => {
+		const result = parseDialinForm(
+			fd(
+				{
+					bean: 'Ethiopia', roaster: 'SM', method: 'pourover', method_name: '4:6 Method',
+					dose_g: '20', water_g: '300', temperature_c: '92', brewer: 'V60'
+				},
+				{ pour_water: ['60', '60'], pour_time: ['0', '45'], pour_notes: ['Bloom', ''] }
+			)
+		);
+		assert.equal(result.ok, true);
+		assert.deepEqual(result.dialin.pours, [
+			{ water_g: 60, time_s: 0, notes: 'Bloom' },
+			{ water_g: 60, time_s: 45, notes: null }
+		]);
+	});
+
+	it('flags incomplete pour rows', () => {
+		const result = parseDialinForm(
+			fd({ bean: 'X', roaster: 'Y', method: 'pourover' }, { pour_water: ['60'], pour_time: [''], pour_notes: [''] })
+		);
+		assert.equal(result.ok, false);
+		assert.ok(result.errors.pours);
+	});
+
+	it('nulls out cross-method fields', () => {
+		const espresso = parseDialinForm(
+			fd({ bean: 'X', roaster: 'Y', method: 'espresso', water_g: '300', brewer: 'V60', method_name: 'Z' })
+		);
+		assert.equal(espresso.ok, true);
+		assert.equal(espresso.dialin.water_g, null);
+		assert.equal(espresso.dialin.brewer, null);
+		assert.equal(espresso.dialin.method_name, null);
+		const pourover = parseDialinForm(fd({ bean: 'X', roaster: 'Y', method: 'pourover', yield_g: '35' }));
+		assert.equal(pourover.ok, true);
+		assert.equal(pourover.dialin.yield_g, null);
+	});
+
+	it('echoes raw values on failure', () => {
+		const result = parseDialinForm(fd({ bean: '', roaster: 'Y', method: 'espresso', dose_g: '18' }));
+		assert.equal(result.ok, false);
+		assert.equal(result.values.roaster, 'Y');
+		assert.equal(result.values.dose_g, '18');
+	});
+});
