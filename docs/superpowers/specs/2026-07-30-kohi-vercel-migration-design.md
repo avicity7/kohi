@@ -54,13 +54,14 @@ New files:
 Modified files:
 
 - `src/lib/index.js` + `src/lib/grind.test.js` — helpers consume the explicit `grinds` array instead of parsing `grind(...)` keys (that parsing moves into the seed script).
+- `src/routes/+layout.svelte` — receives the `:root`/`body` theme-token CSS blocks from `+page.svelte` verbatim, so `/login` and the error page share the site theme (values unchanged).
 - `src/routes/+page.svelte` — authed-only affordances (pencil per card, "+ Add"), drawer wiring, footer sign-in/out link.
 - `static/manifest.webmanifest` — `start_url` and `scope`: `/kohi/` → `/`.
 - `package.json` — deps: − `webpack`, − `webpack-cli`, − `@sveltejs/adapter-static`, − `@sveltejs/adapter-auto`; + `@sveltejs/adapter-vercel`, + `@neondatabase/serverless`; `js-yaml` stays (export endpoint + seed). Scripts: add `"test": "node --test src/"`.
 
 Deleted: `static/dialins.yaml` (after seeding), `.github/workflows/build-and-deploy.yaml` (at decommission time).
 
-Unchanged: `src/service-worker.js`, `src/app.html`, all styling, PWA icons.
+Unchanged: `src/service-worker.js`, `src/app.html`, all styling values (design tokens, card CSS), PWA icons.
 
 Data flow — read: request → hooks (cookie → `locals.authed`) → `load` → Neon → server-rendered HTML.
 Data flow — write: drawer `<form>` POST `?/create|update|delete` → action (auth check → validate → SQL) → load re-runs → drawer closes.
