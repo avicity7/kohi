@@ -56,6 +56,13 @@ describe('passwordMatches', () => {
 		assert.equal(passwordMatches('', 'open sesame'), false);
 		assert.equal(passwordMatches(undefined, 'open sesame'), false);
 	});
+
+	it('rejects nullish or empty expected password', () => {
+		assert.equal(passwordMatches('', undefined), false);
+		assert.equal(passwordMatches(undefined, undefined), false);
+		assert.equal(passwordMatches('', ''), false);
+		assert.equal(passwordMatches('x', null), false);
+	});
 });
 
 describe('constants', () => {

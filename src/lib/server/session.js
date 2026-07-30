@@ -27,6 +27,7 @@ export function verifySession(token, secret, now = Date.now()) {
 }
 
 export function passwordMatches(input, expected) {
+	if (typeof expected !== 'string' || expected === '') return false;
 	const a = createHash('sha256').update(String(input ?? '')).digest();
 	const b = createHash('sha256').update(String(expected ?? '')).digest();
 	return timingSafeEqual(a, b);
