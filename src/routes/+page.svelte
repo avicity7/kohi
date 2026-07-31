@@ -118,6 +118,11 @@
 		/>
 		{#if data.authed}
 			<button class="chip add-chip" onclick={openNew}>+ Add</button>
+			<form class="auth-form" method="POST" action="?/logout" use:enhance>
+				<button class="chip">Sign out</button>
+			</form>
+		{:else}
+			<a class="chip auth-chip" href="/login">Sign in</a>
 		{/if}
 		{#if methods.length > 1 || grinderNames.length > 0}
 			<div class="chips" role="group" aria-label="Quick filters">
@@ -345,16 +350,6 @@
 		</section>
 	{/if}
 </main>
-
-<footer class="site-footer">
-	{#if data.authed}
-		<form method="POST" action="?/logout" use:enhance>
-			<button class="footer-link">Sign out</button>
-		</form>
-	{:else}
-		<a class="footer-link" href="/login">Sign in</a>
-	{/if}
-</footer>
 
 <DialinForm bind:open={drawerOpen} dialin={editing} grinderNames={grinderNames} />
 
@@ -771,25 +766,12 @@
 		color: var(--accent);
 	}
 
-	.site-footer {
-		max-width: 680px;
-		margin: 0 auto;
-		padding: 0 1.5rem 2.5rem;
-		text-align: center;
+	.auth-form {
+		display: contents;
 	}
 
-	.footer-link {
-		background: none;
-		border: none;
-		padding: 0;
-		font-family: var(--sans);
-		font-size: 0.78rem;
-		color: var(--ink-muted);
+	a.auth-chip {
 		text-decoration: none;
-		cursor: pointer;
-	}
-
-	.footer-link:hover {
-		color: var(--accent);
+		line-height: 1;
 	}
 </style>
