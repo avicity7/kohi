@@ -21,7 +21,8 @@ export const actions = {
 		if (!parsed.ok) return fail(400, { errors: parsed.errors, values: parsed.values });
 		try {
 			await createDialin(parsed.dialin);
-		} catch {
+		} catch (err) {
+			console.error(err);
 			return fail(500, { message: 'Saving failed — try again.' });
 		}
 		return { saved: true };
@@ -36,7 +37,8 @@ export const actions = {
 		if (!parsed.ok) return fail(400, { errors: parsed.errors, values: parsed.values });
 		try {
 			await updateDialin(id, parsed.dialin);
-		} catch {
+		} catch (err) {
+			console.error(err);
 			return fail(500, { message: 'Saving failed — try again.' });
 		}
 		return { saved: true };
@@ -48,7 +50,8 @@ export const actions = {
 		if (!id) return fail(400, { message: 'Missing entry id.' });
 		try {
 			await deleteDialin(id);
-		} catch {
+		} catch (err) {
+			console.error(err);
 			return fail(500, { message: 'Delete failed — try again.' });
 		}
 		return { deleted: true };
