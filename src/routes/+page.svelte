@@ -167,22 +167,30 @@
 						{/if}
 					</div>
 					<div class="params">
-						<div class="param">
-							<span class="label">{@html icons.dose} Dose</span>
-							<span class="value">{entry.dose_g}g</span>
-						</div>
-						<div class="param">
-							<span class="label">{@html icons.yield} Yield</span>
-							<span class="value">{entry.yield_g}g</span>
-						</div>
-						<div class="param">
-							<span class="label">{@html icons.ratio} Ratio</span>
-							<span class="value">{calculateRatio(entry.dose_g, entry.yield_g)}</span>
-						</div>
-						<div class="param">
-							<span class="label">{@html icons.time} Time</span>
-							<span class="value">{formatTime(entry.time_s)}</span>
-						</div>
+						{#if entry.dose_g != null}
+							<div class="param">
+								<span class="label">{@html icons.dose} Dose</span>
+								<span class="value">{entry.dose_g}g</span>
+							</div>
+						{/if}
+						{#if entry.yield_g != null}
+							<div class="param">
+								<span class="label">{@html icons.yield} Yield</span>
+								<span class="value">{entry.yield_g}g</span>
+							</div>
+						{/if}
+						{#if entry.dose_g != null && entry.yield_g != null}
+							<div class="param">
+								<span class="label">{@html icons.ratio} Ratio</span>
+								<span class="value">{calculateRatio(entry.dose_g, entry.yield_g)}</span>
+							</div>
+						{/if}
+						{#if entry.time_s != null}
+							<div class="param">
+								<span class="label">{@html icons.time} Time</span>
+								<span class="value">{formatTime(entry.time_s)}</span>
+							</div>
+						{/if}
 						{#if grinds.length > 0}
 							<div class="param">
 								<span class="label">{@html icons.grind} Grind</span>
@@ -236,18 +244,24 @@
 					</div>
 
 					<div class="params">
-						<div class="param">
-							<span class="label">{@html icons.dose} Dose</span>
-							<span class="value">{entry.dose_g}g</span>
-						</div>
-						<div class="param">
-							<span class="label">{@html icons.water} Water</span>
-							<span class="value">{entry.water_g}g</span>
-						</div>
-						<div class="param">
-							<span class="label">{@html icons.brewer} Brewer</span>
-							<span class="value">{entry.brewer}</span>
-						</div>
+						{#if entry.dose_g != null}
+							<div class="param">
+								<span class="label">{@html icons.dose} Dose</span>
+								<span class="value">{entry.dose_g}g</span>
+							</div>
+						{/if}
+						{#if entry.water_g != null}
+							<div class="param">
+								<span class="label">{@html icons.water} Water</span>
+								<span class="value">{entry.water_g}g</span>
+							</div>
+						{/if}
+						{#if entry.brewer}
+							<div class="param">
+								<span class="label">{@html icons.brewer} Brewer</span>
+								<span class="value">{entry.brewer}</span>
+							</div>
+						{/if}
 						{#if grinds.length > 0}
 							<div class="param">
 								<span class="label">{@html icons.grind} Grind</span>
@@ -278,14 +292,18 @@
 							</div>
 						{:else}
 							<!-- Simple format: show bloom and total time -->
-							<div class="param">
-								<span class="label">{@html icons.bloom} Bloom</span>
-								<span class="value">{formatTime(entry.bloom_time_s)}</span>
-							</div>
-							<div class="param">
-								<span class="label">{@html icons.time} Total time</span>
-								<span class="value">{formatTime(entry.total_time_s)}</span>
-							</div>
+							{#if entry.bloom_time_s != null}
+								<div class="param">
+									<span class="label">{@html icons.bloom} Bloom</span>
+									<span class="value">{formatTime(entry.bloom_time_s)}</span>
+								</div>
+							{/if}
+							{#if entry.total_time_s != null}
+								<div class="param">
+									<span class="label">{@html icons.time} Total time</span>
+									<span class="value">{formatTime(entry.total_time_s)}</span>
+								</div>
+							{/if}
 						{/if}
 					</div>
 
