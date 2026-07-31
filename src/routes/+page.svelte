@@ -1,7 +1,22 @@
 <script>
 	import { getGrinds, formatRange, filterEntries, getGrinderNames } from '$lib';
+	import { enhance } from '$app/forms';
+	import DialinForm from '$lib/components/DialinForm.svelte';
 
 	let { data } = $props();
+
+	let drawerOpen = $state(false);
+	let editing = $state(null);
+
+	function openNew() {
+		editing = null;
+		drawerOpen = true;
+	}
+
+	function openEdit(entry) {
+		editing = entry;
+		drawerOpen = true;
+	}
 
 	let query = $state('');
 	let methodFilter = $state(null);
@@ -101,6 +116,9 @@
 			bind:this={searchEl}
 			bind:value={query}
 		/>
+		{#if data.authed}
+			<button class="chip add-chip" onclick={openNew}>+ Add</button>
+		{/if}
 		{#if methods.length > 1 || grinderNames.length > 0}
 			<div class="chips" role="group" aria-label="Quick filters">
 				{#if methods.length > 1}
@@ -144,6 +162,9 @@
 							<span class="roaster">{entry.roaster}</span>
 							<h3>{entry.bean}</h3>
 						</div>
+						{#if data.authed}
+							<button class="edit-btn" aria-label="Edit {entry.bean}" onclick={() => openEdit(entry)}>✎</button>
+						{/if}
 					</div>
 					<div class="params">
 						<div class="param">
@@ -208,6 +229,9 @@
 						</div>
 						{#if entry.method_name}
 							<span class="method-badge">{entry.method_name}</span>
+						{/if}
+						{#if data.authed}
+							<button class="edit-btn" aria-label="Edit {entry.bean}" onclick={() => openEdit(entry)}>✎</button>
 						{/if}
 					</div>
 
@@ -303,6 +327,18 @@
 		</section>
 	{/if}
 </main>
+
+<footer class="site-footer">
+	{#if data.authed}
+		<form method="POST" action="?/logout" use:enhance>
+			<button class="footer-link">Sign out</button>
+		</form>
+	{:else}
+		<a class="footer-link" href="/login">Sign in</a>
+	{/if}
+</footer>
+
+<DialinForm bind:open={drawerOpen} dialin={editing} grinderNames={grinderNames} />
 
 <style>
 	main {
@@ -693,5 +729,49 @@
 		.params {
 			grid-template-columns: repeat(2, 1fr);
 		}
+	}
+
+	.add-chip {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+
+	.edit-btn {
+		flex-shrink: 0;
+		background: none;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		color: var(--ink-muted);
+		font-size: 0.9rem;
+		line-height: 1;
+		padding: 0.35rem 0.5rem;
+		cursor: pointer;
+	}
+
+	.edit-btn:hover {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+
+	.site-footer {
+		max-width: 680px;
+		margin: 0 auto;
+		padding: 0 1.5rem 2.5rem;
+		text-align: center;
+	}
+
+	.footer-link {
+		background: none;
+		border: none;
+		padding: 0;
+		font-family: var(--sans);
+		font-size: 0.78rem;
+		color: var(--ink-muted);
+		text-decoration: none;
+		cursor: pointer;
+	}
+
+	.footer-link:hover {
+		color: var(--accent);
 	}
 </style>
