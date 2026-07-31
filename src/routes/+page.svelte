@@ -739,6 +739,15 @@
 			width: 100%;
 		}
 
+		.auth-chip {
+			align-self: flex-end;
+			display: inline-flex;
+			width: fit-content;
+			min-height: 44px;
+			align-items: center;
+			box-sizing: border-box;
+		}
+
 		.params {
 			grid-template-columns: repeat(2, 1fr);
 		}
