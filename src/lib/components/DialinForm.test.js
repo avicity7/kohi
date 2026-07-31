@@ -69,11 +69,32 @@ function classRule(children, name) {
 	);
 }
 
+function classPseudoRule(children, className, pseudoName) {
+	return children.find(
+		node =>
+			node.type === 'Rule' &&
+			selectorNames(node.prelude, 'ClassSelector').includes(className) &&
+			selectorNames(node.prelude, 'PseudoClassSelector').includes(pseudoName)
+	);
+}
+
+function typeRule(children, name) {
+	return children.find(
+		node => node.type === 'Rule' && selectorNames(node.prelude, 'TypeSelector').includes(name)
+	);
+}
+
 function declarations(rule) {
 	return Object.fromEntries(
 		rule.block.children
 			.filter(node => node.type === 'Declaration')
 			.map(node => [node.property, node.value])
+	);
+}
+
+function media(query) {
+	return component.css.children.find(
+		node => node.type === 'Atrule' && node.name === 'media' && node.prelude === query
 	);
 }
 
@@ -100,11 +121,50 @@ test('editor keeps its header, scrolling fields, and primary actions in persiste
 	assert.equal(attribute(save, 'type'), 'submit');
 
 	const drawer = declarations(classRule(component.css.children, 'drawer'));
+	const closedDrawerRule = classPseudoRule(component.css.children, 'drawer', 'not');
+	assert.ok(closedDrawerRule);
+	const closedDrawer = declarations(closedDrawerRule);
+	const headingRule = classRule(component.css.children, 'drawer-heading');
+	const fieldsetRule = typeRule(component.css.children, 'fieldset');
+	assert.ok(headingRule);
+	assert.ok(fieldsetRule);
+	const headingCss = declarations(headingRule);
+	const fieldsetCss = declarations(fieldsetRule);
 	const scrollCss = declarations(classRule(component.css.children, 'drawer-scroll'));
 	assert.equal(drawer['box-sizing'], 'border-box');
 	assert.equal(drawer.display, 'grid');
 	assert.equal(drawer['grid-template-rows'], 'auto minmax(0, 1fr) auto');
 	assert.equal(drawer.overflow, 'hidden');
+	assert.equal(closedDrawer.display, 'none');
+	assert.equal(headingCss['min-width'], '0');
+	assert.equal(fieldsetCss['min-width'], '0');
 	assert.equal(scrollCss['min-height'], '0');
 	assert.equal(scrollCss['overflow-y'], 'auto');
+});
+
+test('phone editor fills the visual viewport and stacks repeatable fields without overflow', () => {
+	const phone = media('(max-width: 520px)');
+	assert.ok(phone);
+
+	const drawer = declarations(classRule(phone.block.children, 'drawer'));
+	assert.equal(drawer.inset, '0');
+	assert.equal(drawer.width, '100%');
+	assert.equal(drawer.height, '100dvh');
+	assert.equal(drawer['max-height'], '100dvh');
+	assert.equal(drawer['border-radius'], '0');
+
+	const controls = declarations(typeRule(phone.block.children, 'input'));
+	const grindRow = declarations(classRule(phone.block.children, 'grind-row'));
+	const pourRow = declarations(classRule(phone.block.children, 'pour-row'));
+	const actions = declarations(classRule(phone.block.children, 'drawer-actions'));
+	assert.equal(controls['font-size'], '1rem');
+	assert.equal(controls['min-height'], '44px');
+	assert.equal(grindRow['grid-template-columns'], 'minmax(0, 1fr)');
+	assert.equal(pourRow['grid-template-columns'], 'minmax(0, 1fr)');
+	assert.match(actions['padding-bottom'], /safe-area-inset-bottom/);
+
+	const compactPhone = media('(max-width: 360px)');
+	assert.ok(compactPhone);
+	const compactGrid = declarations(classRule(compactPhone.block.children, 'grid2'));
+	assert.equal(compactGrid['grid-template-columns'], 'minmax(0, 1fr)');
 });
