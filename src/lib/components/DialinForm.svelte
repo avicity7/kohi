@@ -58,16 +58,30 @@
 	}
 </script>
 
-<dialog bind:this={dialogEl} class="drawer" onclose={() => (open = false)}>
+<dialog
+	bind:this={dialogEl}
+	class="drawer"
+	aria-labelledby="dialin-form-title"
+	onclose={() => (open = false)}
+>
 	{#key generation}
 		<header class="drawer-header">
-			<h2>{dialin ? `Edit: ${dialin.bean}` : 'New dial-in'}</h2>
+			<div>
+				<p class="drawer-kicker">{dialin ? 'Edit dial-in' : 'New dial-in'}</p>
+				<h2 id="dialin-form-title">{dialin?.bean ?? 'Coffee recipe'}</h2>
+			</div>
 			<button type="button" class="ghost close" aria-label="Close" onclick={() => (open = false)}>×</button>
 		</header>
 
-		{#if message}<p class="form-error banner" role="alert">{message}</p>{/if}
+		<div class="drawer-scroll">
+			{#if message}<p class="form-error banner" role="alert">{message}</p>{/if}
 
-		<form method="POST" action={dialin ? '?/update' : '?/create'} use:enhance={submitHandler}>
+			<form
+				id="dialin-editor-form"
+				method="POST"
+				action={dialin ? '?/update' : '?/create'}
+				use:enhance={submitHandler}
+			>
 			{#if dialin}<input type="hidden" name="id" value={dialin.id} />{/if}
 
 			<label>
@@ -185,18 +199,22 @@
 				<textarea name="notes" rows="3">{dialin?.notes ?? ''}</textarea>
 			</label>
 
-			<footer class="drawer-actions">
-				<button type="button" class="ghost" onclick={() => (open = false)}>Cancel</button>
-				<button class="primary">Save</button>
-			</footer>
-		</form>
-
-		{#if dialin}
-			<form method="POST" action="?/delete" use:enhance={deleteHandler} class="delete-form">
-				<input type="hidden" name="id" value={dialin.id} />
-				<button class="danger">Delete this dial-in</button>
 			</form>
-		{/if}
+
+			{#if dialin}
+				<form method="POST" action="?/delete" use:enhance={deleteHandler} class="delete-form">
+					<input type="hidden" name="id" value={dialin.id} />
+					<button class="danger">Delete this dial-in</button>
+				</form>
+			{/if}
+		</div>
+
+		<footer class="drawer-actions">
+			<button type="button" class="ghost cancel" onclick={() => (open = false)}>Cancel</button>
+			<button type="submit" form="dialin-editor-form" class="primary">
+				{dialin ? 'Save changes' : 'Add dial-in'}
+			</button>
+		</footer>
 	{/key}
 </dialog>
 
@@ -204,17 +222,20 @@
 	.drawer {
 		position: fixed;
 		inset: 0 0 0 auto;
+		box-sizing: border-box;
+		display: grid;
+		grid-template-rows: auto minmax(0, 1fr) auto;
 		margin: 0;
+		width: min(29rem, 100vw);
+		max-width: 100vw;
 		height: 100dvh;
 		max-height: 100dvh;
-		width: min(26rem, 100vw);
-		max-width: 100vw;
+		overflow: hidden;
 		border: none;
 		border-left: 1px solid var(--line);
 		background: var(--surface);
 		color: var(--ink);
-		padding: 1.5rem;
-		overflow-y: auto;
+		padding: 0;
 		font-family: var(--sans);
 	}
 
@@ -226,13 +247,34 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		margin-bottom: 1.25rem;
+		gap: 1rem;
+		padding: 1.25rem 1.5rem 1rem;
+		border-bottom: 1px solid var(--line-soft);
 	}
 
 	.drawer-header h2 {
 		font-family: var(--serif);
-		font-size: 1.2rem;
+		font-size: 1.25rem;
 		margin: 0;
+		overflow-wrap: anywhere;
+	}
+
+	.drawer-kicker {
+		margin: 0 0 0.2rem;
+		font-size: 0.65rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		color: var(--accent);
+	}
+
+	.drawer-scroll {
+		min-width: 0;
+		min-height: 0;
+		overflow-x: hidden;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding: 1.25rem 1.5rem 2rem;
 	}
 
 	form > label,
@@ -364,7 +406,11 @@
 		border: none;
 		font-size: 1.3rem;
 		line-height: 1;
-		padding: 0.2rem 0.5rem;
+		display: inline-grid;
+		width: 44px;
+		height: 44px;
+		place-items: center;
+		padding: 0;
 	}
 
 	.add-row {
@@ -374,8 +420,12 @@
 	.drawer-actions {
 		display: flex;
 		justify-content: flex-end;
-		gap: 0.6rem;
-		margin-top: 1.25rem;
+		gap: 0.65rem;
+		margin: 0;
+		padding: 1rem 1.5rem;
+		border-top: 1px solid var(--line-soft);
+		background: var(--surface);
+		box-shadow: 0 -8px 24px color-mix(in srgb, var(--ink) 5%, transparent);
 	}
 
 	.primary {
