@@ -1,7 +1,22 @@
 <script>
 	import { getGrinds, formatRange, filterEntries, getGrinderNames } from '$lib';
+	import { enhance } from '$app/forms';
+	import DialinForm from '$lib/components/DialinForm.svelte';
 
 	let { data } = $props();
+
+	let drawerOpen = $state(false);
+	let editing = $state(null);
+
+	function openNew() {
+		editing = null;
+		drawerOpen = true;
+	}
+
+	function openEdit(entry) {
+		editing = entry;
+		drawerOpen = true;
+	}
 
 	let query = $state('');
 	let methodFilter = $state(null);
@@ -101,6 +116,14 @@
 			bind:this={searchEl}
 			bind:value={query}
 		/>
+		{#if data.authed}
+			<button class="chip add-chip" onclick={openNew}>+ Add</button>
+			<form class="auth-form" method="POST" action="?/logout" use:enhance>
+				<button class="chip">Sign out</button>
+			</form>
+		{:else}
+			<a class="chip auth-chip" href="/login">Sign in</a>
+		{/if}
 		{#if methods.length > 1 || grinderNames.length > 0}
 			<div class="chips" role="group" aria-label="Quick filters">
 				{#if methods.length > 1}
@@ -144,24 +167,35 @@
 							<span class="roaster">{entry.roaster}</span>
 							<h3>{entry.bean}</h3>
 						</div>
+						{#if data.authed}
+							<button class="edit-btn" aria-label="Edit {entry.bean}" onclick={() => openEdit(entry)}>✎</button>
+						{/if}
 					</div>
 					<div class="params">
-						<div class="param">
-							<span class="label">{@html icons.dose} Dose</span>
-							<span class="value">{entry.dose_g}g</span>
-						</div>
-						<div class="param">
-							<span class="label">{@html icons.yield} Yield</span>
-							<span class="value">{entry.yield_g}g</span>
-						</div>
-						<div class="param">
-							<span class="label">{@html icons.ratio} Ratio</span>
-							<span class="value">{calculateRatio(entry.dose_g, entry.yield_g)}</span>
-						</div>
-						<div class="param">
-							<span class="label">{@html icons.time} Time</span>
-							<span class="value">{formatTime(entry.time_s)}</span>
-						</div>
+						{#if entry.dose_g != null}
+							<div class="param">
+								<span class="label">{@html icons.dose} Dose</span>
+								<span class="value">{entry.dose_g}g</span>
+							</div>
+						{/if}
+						{#if entry.yield_g != null}
+							<div class="param">
+								<span class="label">{@html icons.yield} Yield</span>
+								<span class="value">{entry.yield_g}g</span>
+							</div>
+						{/if}
+						{#if entry.dose_g != null && entry.yield_g != null}
+							<div class="param">
+								<span class="label">{@html icons.ratio} Ratio</span>
+								<span class="value">{calculateRatio(entry.dose_g, entry.yield_g)}</span>
+							</div>
+						{/if}
+						{#if entry.time_s != null}
+							<div class="param">
+								<span class="label">{@html icons.time} Time</span>
+								<span class="value">{formatTime(entry.time_s)}</span>
+							</div>
+						{/if}
 						{#if grinds.length > 0}
 							<div class="param">
 								<span class="label">{@html icons.grind} Grind</span>
@@ -209,21 +243,30 @@
 						{#if entry.method_name}
 							<span class="method-badge">{entry.method_name}</span>
 						{/if}
+						{#if data.authed}
+							<button class="edit-btn" aria-label="Edit {entry.bean}" onclick={() => openEdit(entry)}>✎</button>
+						{/if}
 					</div>
 
 					<div class="params">
-						<div class="param">
-							<span class="label">{@html icons.dose} Dose</span>
-							<span class="value">{entry.dose_g}g</span>
-						</div>
-						<div class="param">
-							<span class="label">{@html icons.water} Water</span>
-							<span class="value">{entry.water_g}g</span>
-						</div>
-						<div class="param">
-							<span class="label">{@html icons.brewer} Brewer</span>
-							<span class="value">{entry.brewer}</span>
-						</div>
+						{#if entry.dose_g != null}
+							<div class="param">
+								<span class="label">{@html icons.dose} Dose</span>
+								<span class="value">{entry.dose_g}g</span>
+							</div>
+						{/if}
+						{#if entry.water_g != null}
+							<div class="param">
+								<span class="label">{@html icons.water} Water</span>
+								<span class="value">{entry.water_g}g</span>
+							</div>
+						{/if}
+						{#if entry.brewer}
+							<div class="param">
+								<span class="label">{@html icons.brewer} Brewer</span>
+								<span class="value">{entry.brewer}</span>
+							</div>
+						{/if}
 						{#if grinds.length > 0}
 							<div class="param">
 								<span class="label">{@html icons.grind} Grind</span>
@@ -254,14 +297,18 @@
 							</div>
 						{:else}
 							<!-- Simple format: show bloom and total time -->
-							<div class="param">
-								<span class="label">{@html icons.bloom} Bloom</span>
-								<span class="value">{formatTime(entry.bloom_time_s)}</span>
-							</div>
-							<div class="param">
-								<span class="label">{@html icons.time} Total time</span>
-								<span class="value">{formatTime(entry.total_time_s)}</span>
-							</div>
+							{#if entry.bloom_time_s != null}
+								<div class="param">
+									<span class="label">{@html icons.bloom} Bloom</span>
+									<span class="value">{formatTime(entry.bloom_time_s)}</span>
+								</div>
+							{/if}
+							{#if entry.total_time_s != null}
+								<div class="param">
+									<span class="label">{@html icons.time} Total time</span>
+									<span class="value">{formatTime(entry.total_time_s)}</span>
+								</div>
+							{/if}
 						{/if}
 					</div>
 
@@ -304,44 +351,9 @@
 	{/if}
 </main>
 
+<DialinForm bind:open={drawerOpen} dialin={editing} grinderNames={grinderNames} />
+
 <style>
-	:global(:root) {
-		color-scheme: light dark;
-		--bg: #f6f4ef;
-		--surface: #ffffff;
-		--ink: #23201b;
-		--ink-soft: #5c564d;
-		--ink-muted: #86806f;
-		--line: #e4dfd4;
-		--line-soft: #eeeae0;
-		--accent: #7c5335;
-		--shadow: 0 1px 2px rgba(35, 32, 27, 0.04), 0 4px 12px rgba(35, 32, 27, 0.03);
-		--serif: 'Source Serif 4', Georgia, serif;
-		--sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-	}
-
-	@media (prefers-color-scheme: dark) {
-		:global(:root) {
-			--bg: #171410;
-			--surface: #211d18;
-			--ink: #ece7dd;
-			--ink-soft: #b3ab9c;
-			--ink-muted: #8a8171;
-			--line: #37312a;
-			--line-soft: #2b2621;
-			--accent: #c99e6e;
-			--shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
-		}
-	}
-
-	:global(body) {
-		margin: 0;
-		background: var(--bg);
-		font-family: var(--serif);
-		color: var(--ink);
-		-webkit-font-smoothing: antialiased;
-	}
-
 	main {
 		max-width: 680px;
 		margin: 0 auto;
@@ -730,5 +742,36 @@
 		.params {
 			grid-template-columns: repeat(2, 1fr);
 		}
+	}
+
+	.add-chip {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+
+	.edit-btn {
+		flex-shrink: 0;
+		background: none;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		color: var(--ink-muted);
+		font-size: 0.9rem;
+		line-height: 1;
+		padding: 0.35rem 0.5rem;
+		cursor: pointer;
+	}
+
+	.edit-btn:hover {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+
+	.auth-form {
+		display: contents;
+	}
+
+	a.auth-chip {
+		text-decoration: none;
+		line-height: 1;
 	}
 </style>
