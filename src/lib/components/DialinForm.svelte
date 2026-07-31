@@ -613,6 +613,10 @@
 			white-space: normal;
 		}
 
+		.row-field input {
+			margin-top: 0.3rem;
+		}
+
 		.remove-row {
 			justify-self: end;
 		}

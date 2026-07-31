@@ -84,6 +84,15 @@ function typeRule(children, name) {
 	);
 }
 
+function classTypeRule(children, className, typeName) {
+	return children.find(
+		node =>
+			node.type === 'Rule' &&
+			selectorNames(node.prelude, 'ClassSelector').includes(className) &&
+			selectorNames(node.prelude, 'TypeSelector').includes(typeName)
+	);
+}
+
 function declarations(rule) {
 	return Object.fromEntries(
 		rule.block.children
@@ -157,10 +166,14 @@ test('phone editor fills the visual viewport and stacks repeatable fields withou
 	const grindRow = declarations(classRule(phone.block.children, 'grind-row'));
 	const pourRow = declarations(classRule(phone.block.children, 'pour-row'));
 	const actions = declarations(classRule(phone.block.children, 'drawer-actions'));
+	const rowInputRule = classTypeRule(phone.block.children, 'row-field', 'input');
+	assert.ok(rowInputRule);
+	const rowInput = declarations(rowInputRule);
 	assert.equal(controls['font-size'], '1rem');
 	assert.equal(controls['min-height'], '44px');
 	assert.equal(grindRow['grid-template-columns'], 'minmax(0, 1fr)');
 	assert.equal(pourRow['grid-template-columns'], 'minmax(0, 1fr)');
+	assert.equal(rowInput['margin-top'], '0.3rem');
 	assert.match(actions['padding-bottom'], /safe-area-inset-bottom/);
 
 	const compactPhone = media('(max-width: 360px)');
