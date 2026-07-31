@@ -26,7 +26,7 @@ The dialog is a three-row grid:
 2. A scrollable body containing feedback, fields, dynamic rows, and the edit-only delete action.
 3. A footer containing Cancel and Save.
 
-The create/update form owns the scrollable body and footer so standard HTML submission remains intact. The header remains outside the form. The edit-only delete form stays at the end of the scrolling body, visually separated from routine actions.
+The scrollable body contains the create/update form followed by the edit-only delete form, visually separating destructive actions from routine fields. The header and footer remain fixed siblings of that body. The footer's Save button targets the create/update form through its native `form` attribute, preserving standard HTML submission without nesting the delete form.
 
 On desktop, the dialog is a slightly wider right drawer with a maximum width that still respects narrow laptop windows. On phones, it occupies the dynamic viewport and removes the drawer border radius. Safe-area insets pad the header and footer where supported.
 
