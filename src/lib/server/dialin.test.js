@@ -153,6 +153,23 @@ describe('parseDialinForm', () => {
 		assert.ok(result.errors.grinds);
 	});
 
+	it('rejects duplicate grinder rows', () => {
+		const dupTyped = parseDialinForm(
+			fd({ bean: 'X', roaster: 'Y', method: 'espresso' }, { grind_type: ['K6', 'K6'], grind_setting: ['27', '28'] })
+		);
+		assert.equal(dupTyped.ok, false);
+		assert.ok(dupTyped.errors.grinds);
+		const dupUntyped = parseDialinForm(
+			fd({ bean: 'X', roaster: 'Y', method: 'espresso' }, { grind_type: ['', ''], grind_setting: ['14', '15'] })
+		);
+		assert.equal(dupUntyped.ok, false);
+		assert.ok(dupUntyped.errors.grinds);
+		const distinct = parseDialinForm(
+			fd({ bean: 'X', roaster: 'Y', method: 'espresso' }, { grind_type: ['Breville', 'K6'], grind_setting: ['7-8', '28'] })
+		);
+		assert.equal(distinct.ok, true);
+	});
+
 	it('parses pour-over with pours; time 0 is allowed', () => {
 		const result = parseDialinForm(
 			fd(

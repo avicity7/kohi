@@ -115,6 +115,7 @@ export function parseDialinForm(formData) {
 	const total_time_s = rangeText('total_time_s', 'Total time');
 
 	const grinds = [];
+	const seenGrindTypes = new Set();
 	const grindTypes = formData.getAll('grind_type').map(v => String(v).trim());
 	const grindSettings = formData.getAll('grind_setting').map(v => String(v).trim());
 	for (let i = 0; i < Math.max(grindTypes.length, grindSettings.length); i++) {
@@ -125,6 +126,11 @@ export function parseDialinForm(formData) {
 			errors.grinds = 'Every grind row needs a setting — a number or a range like 7-8.';
 			continue;
 		}
+		if (seenGrindTypes.has(type)) {
+			errors.grinds = 'Each grinder can appear only once.';
+			continue;
+		}
+		seenGrindTypes.add(type);
 		grinds.push({ type, setting });
 	}
 
