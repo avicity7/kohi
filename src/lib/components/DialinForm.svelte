@@ -1,5 +1,6 @@
 <script>
 	import { enhance } from '$app/forms';
+	import { untrack } from 'svelte';
 
 	let { open = $bindable(false), dialin = null, grinderNames = [] } = $props();
 
@@ -29,7 +30,7 @@
 			: [];
 		errors = {};
 		message = '';
-		generation += 1;
+		generation = untrack(() => generation) + 1;
 	});
 
 	function submitHandler() {
