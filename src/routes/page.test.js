@@ -44,19 +44,52 @@ function declarations(rule) {
 	);
 }
 
-test('mobile sign-in stays compact while remaining a full-size touch target', () => {
+function elementClasses(node) {
+	const attribute = node.attributes?.find(item => item.type === 'Attribute' && item.name === 'class');
+	if (!Array.isArray(attribute?.value)) return [];
+	return attribute.value
+		.filter(item => item.type === 'Text')
+		.flatMap(item => item.data.split(/\s+/).filter(Boolean));
+}
+
+function elementWithClass(node, name) {
+	return visit(node, item => item.type === 'Element' && elementClasses(item).includes(name));
+}
+
+test('mobile header keeps account actions beside the title', () => {
+	const actions = elementWithClass(component.html, 'header-actions');
+	assert.ok(actions);
+	assert.ok(elementWithClass(actions, 'auth-chip'));
+
 	const phone = component.css.children.find(
 		node => node.type === 'Atrule' && node.name === 'media' && node.prelude === '(max-width: 520px)'
 	);
 	assert.ok(phone);
 
+	const header = declarations(classRule(phone.block.children, 'site-header'));
+	assert.equal(header.display, 'grid');
+	assert.equal(header['grid-template-columns'], 'minmax(0, 1fr) auto');
+
+	const title = declarations(classRule(phone.block.children, 'site-title'));
+	assert.equal(title['grid-column'], '1');
+	assert.equal(title['grid-row'], '1');
+
+	const mobileActions = declarations(classRule(phone.block.children, 'header-actions'));
+	assert.equal(mobileActions['grid-column'], '2');
+	assert.equal(mobileActions['grid-row'], '1');
+	assert.equal(mobileActions['justify-self'], 'end');
+
+	const search = declarations(classRule(phone.block.children, 'search'));
+	assert.equal(search['grid-column'], '1 / -1');
+	assert.equal(search['grid-row'], '2');
+
+	const chips = declarations(classRule(phone.block.children, 'chips'));
+	assert.equal(chips['grid-column'], '1 / -1');
+	assert.equal(chips['grid-row'], '3');
+
 	const authRule = classRule(phone.block.children, 'auth-chip');
 	assert.ok(authRule);
 	const auth = declarations(authRule);
 
-	assert.equal(auth['align-self'], 'flex-end');
-	assert.equal(auth.display, 'inline-flex');
-	assert.equal(auth.width, 'fit-content');
 	assert.equal(auth['min-height'], '44px');
-	assert.equal(auth['align-items'], 'center');
 });

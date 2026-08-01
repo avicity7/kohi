@@ -116,14 +116,16 @@
 			bind:this={searchEl}
 			bind:value={query}
 		/>
-		{#if data.authed}
-			<button class="chip add-chip" onclick={openNew}>+ Add</button>
-			<form class="auth-form" method="POST" action="?/logout" use:enhance>
-				<button class="chip">Sign out</button>
-			</form>
-		{:else}
-			<a class="chip auth-chip" href="/login">Sign in</a>
-		{/if}
+		<div class="header-actions">
+			{#if data.authed}
+				<button class="chip add-chip" onclick={openNew}>+ Add</button>
+				<form class="auth-form" method="POST" action="?/logout" use:enhance>
+					<button class="chip">Sign out</button>
+				</form>
+			{:else}
+				<a class="chip auth-chip" href="/login">Sign in</a>
+			{/if}
+		</div>
 		{#if methods.length > 1 || grinderNames.length > 0}
 			<div class="chips" role="group" aria-label="Quick filters">
 				{#if methods.length > 1}
@@ -420,6 +422,13 @@
 
 	.search:focus {
 		border-color: var(--accent);
+	}
+
+	.header-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-shrink: 0;
 	}
 
 	/* Quick filter chips */
@@ -729,22 +738,40 @@
 		}
 
 		.site-header {
-			flex-direction: column;
-			align-items: stretch;
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto;
+			align-items: center;
 			gap: 0.75rem;
 			padding: 1.1rem 0 0.9rem;
 		}
 
+		.site-title {
+			grid-column: 1;
+			grid-row: 1;
+		}
+
+		.header-actions {
+			grid-column: 2;
+			grid-row: 1;
+			justify-self: end;
+		}
+
 		.search {
+			grid-column: 1 / -1;
+			grid-row: 2;
 			width: 100%;
 		}
 
+		.chips {
+			grid-column: 1 / -1;
+			grid-row: 3;
+		}
+
 		.auth-chip {
-			align-self: flex-end;
 			display: inline-flex;
-			width: fit-content;
 			min-height: 44px;
 			align-items: center;
+			justify-content: center;
 			box-sizing: border-box;
 		}
 
