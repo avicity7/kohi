@@ -58,145 +58,189 @@
 	}
 </script>
 
-<dialog bind:this={dialogEl} class="drawer" onclose={() => (open = false)}>
+<dialog
+	bind:this={dialogEl}
+	class="drawer"
+	aria-labelledby="dialin-form-title"
+	onclose={() => (open = false)}
+>
 	{#key generation}
 		<header class="drawer-header">
-			<h2>{dialin ? `Edit: ${dialin.bean}` : 'New dial-in'}</h2>
+			<div class="drawer-heading">
+				<p class="drawer-kicker">{dialin ? 'Edit dial-in' : 'New dial-in'}</p>
+				<h2 id="dialin-form-title">{dialin?.bean ?? 'Coffee recipe'}</h2>
+			</div>
 			<button type="button" class="ghost close" aria-label="Close" onclick={() => (open = false)}>×</button>
 		</header>
 
-		{#if message}<p class="form-error banner" role="alert">{message}</p>{/if}
+		<div class="drawer-scroll">
+			{#if message}<p class="form-error banner" role="alert">{message}</p>{/if}
 
-		<form method="POST" action={dialin ? '?/update' : '?/create'} use:enhance={submitHandler}>
-			{#if dialin}<input type="hidden" name="id" value={dialin.id} />{/if}
+			<form
+				id="dialin-editor-form"
+				method="POST"
+				action={dialin ? '?/update' : '?/create'}
+				use:enhance={submitHandler}
+			>
+				{#if dialin}<input type="hidden" name="id" value={dialin.id} />{/if}
 
-			<label>
-				Bean
-				<input name="bean" required value={dialin?.bean ?? ''} />
-				{#if errors.bean}<span class="form-error">{errors.bean}</span>{/if}
-			</label>
+				<section class="form-section" aria-labelledby="coffee-section-title">
+					<h3 id="coffee-section-title" class="section-title">Coffee</h3>
 
-			<label>
-				Roaster
-				<input name="roaster" required value={dialin?.roaster ?? ''} />
-				{#if errors.roaster}<span class="form-error">{errors.roaster}</span>{/if}
-			</label>
-
-			<fieldset class="segmented">
-				<legend>Method</legend>
-				<label class:active={method === 'espresso'}>
-					<input type="radio" name="method" value="espresso" bind:group={method} />
-					Espresso
-				</label>
-				<label class:active={method === 'pourover'}>
-					<input type="radio" name="method" value="pourover" bind:group={method} />
-					Pour Over
-				</label>
-			</fieldset>
-
-			<div class="grid2">
-				<label>
-					Dose (g)
-					<input name="dose_g" type="number" step="0.1" min="0" value={dialin?.dose_g ?? ''} />
-					{#if errors.dose_g}<span class="form-error">{errors.dose_g}</span>{/if}
-				</label>
-				<label>
-					Temp (°C)
-					<input name="temperature_c" type="number" step="0.5" min="0" value={dialin?.temperature_c ?? ''} />
-					{#if errors.temperature_c}<span class="form-error">{errors.temperature_c}</span>{/if}
-				</label>
-			</div>
-
-			{#if method === 'espresso'}
-				<div class="grid2">
 					<label>
-						Yield (g)
-						<input name="yield_g" type="number" step="0.1" min="0" value={dialin?.yield_g ?? ''} />
-						{#if errors.yield_g}<span class="form-error">{errors.yield_g}</span>{/if}
+						Bean
+						<input name="bean" required value={dialin?.bean ?? ''} />
+						{#if errors.bean}<span class="form-error">{errors.bean}</span>{/if}
 					</label>
-					<label>
-						Time (s)
-						<input name="time_s" placeholder="28 or 28-32" value={dialin?.time_s ?? ''} />
-						{#if errors.time_s}<span class="form-error">{errors.time_s}</span>{/if}
-					</label>
-				</div>
-			{:else}
-				<label>
-					Method name
-					<input name="method_name" placeholder="4:6 Method" value={dialin?.method_name ?? ''} />
-				</label>
-				<div class="grid2">
-					<label>
-						Water (g)
-						<input name="water_g" type="number" step="1" min="0" value={dialin?.water_g ?? ''} />
-						{#if errors.water_g}<span class="form-error">{errors.water_g}</span>{/if}
-					</label>
-					<label>
-						Brewer
-						<input name="brewer" placeholder="V60" value={dialin?.brewer ?? ''} />
-					</label>
-				</div>
-				<div class="grid2">
-					<label>
-						Bloom (s)
-						<input name="bloom_time_s" placeholder="45" value={dialin?.bloom_time_s ?? ''} />
-						{#if errors.bloom_time_s}<span class="form-error">{errors.bloom_time_s}</span>{/if}
-					</label>
-					<label>
-						Total time (s)
-						<input name="total_time_s" placeholder="210" value={dialin?.total_time_s ?? ''} />
-						{#if errors.total_time_s}<span class="form-error">{errors.total_time_s}</span>{/if}
-					</label>
-				</div>
 
-				<fieldset class="rows">
-					<legend>Pour schedule</legend>
-					{#each pourRows as row, i (i)}
-						<div class="row pour-row">
-							<input name="pour_water" type="number" step="1" min="0" placeholder="g" bind:value={row.water_g} aria-label="Pour {i + 1} water (g)" />
-							<input name="pour_time" type="number" step="1" min="0" placeholder="@ s" bind:value={row.time_s} aria-label="Pour {i + 1} time (s)" />
-							<input name="pour_notes" placeholder="note" bind:value={row.notes} aria-label="Pour {i + 1} note" />
-							<button type="button" class="ghost" aria-label="Remove pour {i + 1}" onclick={() => pourRows.splice(i, 1)}>−</button>
-						</div>
-					{/each}
-					<button type="button" class="ghost add-row" onclick={() => pourRows.push({ water_g: '', time_s: '', notes: '' })}>+ Pour</button>
-					{#if errors.pours}<span class="form-error">{errors.pours}</span>{/if}
-				</fieldset>
-			{/if}
+					<label>
+						Roaster
+						<input name="roaster" required value={dialin?.roaster ?? ''} />
+						{#if errors.roaster}<span class="form-error">{errors.roaster}</span>{/if}
+					</label>
 
-			<fieldset class="rows">
-				<legend>Grinds</legend>
-				<datalist id="grinder-names">
-					{#each grinderNames as name}<option value={name}></option>{/each}
-				</datalist>
-				{#each grindRows as row, i (i)}
-					<div class="row grind-row">
-						<input name="grind_type" list="grinder-names" placeholder="Grinder (optional)" bind:value={row.type} aria-label="Grind {i + 1} grinder" />
-						<input name="grind_setting" placeholder="27 or 7-8" bind:value={row.setting} aria-label="Grind {i + 1} setting" />
-						<button type="button" class="ghost" aria-label="Remove grind {i + 1}" onclick={() => grindRows.splice(i, 1)}>−</button>
+					<fieldset class="segmented">
+						<legend>Method</legend>
+						<label class:active={method === 'espresso'}>
+							<input type="radio" name="method" value="espresso" bind:group={method} />
+							Espresso
+						</label>
+						<label class:active={method === 'pourover'}>
+							<input type="radio" name="method" value="pourover" bind:group={method} />
+							Pour Over
+						</label>
+					</fieldset>
+				</section>
+
+				<section class="form-section" aria-labelledby="recipe-section-title">
+					<h3 id="recipe-section-title" class="section-title">Recipe</h3>
+
+					<div class="grid2">
+						<label>
+							Dose (g)
+							<input name="dose_g" type="number" step="0.1" min="0" value={dialin?.dose_g ?? ''} />
+							{#if errors.dose_g}<span class="form-error">{errors.dose_g}</span>{/if}
+						</label>
+						<label>
+							Temp (°C)
+							<input name="temperature_c" type="number" step="0.5" min="0" value={dialin?.temperature_c ?? ''} />
+							{#if errors.temperature_c}<span class="form-error">{errors.temperature_c}</span>{/if}
+						</label>
 					</div>
-				{/each}
-				<button type="button" class="ghost add-row" onclick={() => grindRows.push({ type: '', setting: '' })}>+ Grinder</button>
-				{#if errors.grinds}<span class="form-error">{errors.grinds}</span>{/if}
-			</fieldset>
 
-			<label>
-				Notes
-				<textarea name="notes" rows="3">{dialin?.notes ?? ''}</textarea>
-			</label>
+					{#if method === 'espresso'}
+						<div class="grid2">
+							<label>
+								Yield (g)
+								<input name="yield_g" type="number" step="0.1" min="0" value={dialin?.yield_g ?? ''} />
+								{#if errors.yield_g}<span class="form-error">{errors.yield_g}</span>{/if}
+							</label>
+							<label>
+								Time (s)
+								<input name="time_s" placeholder="28 or 28-32" value={dialin?.time_s ?? ''} />
+								{#if errors.time_s}<span class="form-error">{errors.time_s}</span>{/if}
+							</label>
+						</div>
+					{:else}
+						<label>
+							Method name
+							<input name="method_name" placeholder="4:6 Method" value={dialin?.method_name ?? ''} />
+						</label>
+						<div class="grid2">
+							<label>
+								Water (g)
+								<input name="water_g" type="number" step="1" min="0" value={dialin?.water_g ?? ''} />
+								{#if errors.water_g}<span class="form-error">{errors.water_g}</span>{/if}
+							</label>
+							<label>
+								Brewer
+								<input name="brewer" placeholder="V60" value={dialin?.brewer ?? ''} />
+							</label>
+						</div>
+						<div class="grid2">
+							<label>
+								Bloom (s)
+								<input name="bloom_time_s" placeholder="45" value={dialin?.bloom_time_s ?? ''} />
+								{#if errors.bloom_time_s}<span class="form-error">{errors.bloom_time_s}</span>{/if}
+							</label>
+							<label>
+								Total time (s)
+								<input name="total_time_s" placeholder="210" value={dialin?.total_time_s ?? ''} />
+								{#if errors.total_time_s}<span class="form-error">{errors.total_time_s}</span>{/if}
+							</label>
+						</div>
 
-			<footer class="drawer-actions">
-				<button type="button" class="ghost" onclick={() => (open = false)}>Cancel</button>
-				<button class="primary">Save</button>
-			</footer>
-		</form>
+						<fieldset class="rows">
+							<legend>Pour schedule</legend>
+							{#each pourRows as row, i (i)}
+								<div class="row pour-row">
+									<label class="row-field">
+										<span>Water (g)</span>
+										<input name="pour_water" type="number" step="1" min="0" placeholder="g" bind:value={row.water_g} aria-label="Pour {i + 1} water (g)" />
+									</label>
+									<label class="row-field">
+										<span>At (s)</span>
+										<input name="pour_time" type="number" step="1" min="0" placeholder="@ s" bind:value={row.time_s} aria-label="Pour {i + 1} time (s)" />
+									</label>
+									<label class="row-field">
+										<span>Note</span>
+										<input name="pour_notes" placeholder="Optional" bind:value={row.notes} aria-label="Pour {i + 1} note" />
+									</label>
+									<button type="button" class="ghost remove-row" aria-label="Remove pour {i + 1}" onclick={() => pourRows.splice(i, 1)}>−</button>
+								</div>
+							{/each}
+							<button type="button" class="ghost add-row" onclick={() => pourRows.push({ water_g: '', time_s: '', notes: '' })}>+ Pour</button>
+							{#if errors.pours}<span class="form-error">{errors.pours}</span>{/if}
+						</fieldset>
+					{/if}
+				</section>
 
-		{#if dialin}
-			<form method="POST" action="?/delete" use:enhance={deleteHandler} class="delete-form">
-				<input type="hidden" name="id" value={dialin.id} />
-				<button class="danger">Delete this dial-in</button>
+				<section class="form-section" aria-labelledby="grinder-section-title">
+					<h3 id="grinder-section-title" class="section-title">Grinder</h3>
+
+					<fieldset class="rows">
+						<legend>Grind settings</legend>
+						<datalist id="grinder-names">
+							{#each grinderNames as name}<option value={name}></option>{/each}
+						</datalist>
+						{#each grindRows as row, i (i)}
+							<div class="row grind-row">
+								<label class="row-field">
+									<span>Grinder</span>
+									<input name="grind_type" list="grinder-names" placeholder="Optional" bind:value={row.type} aria-label="Grind {i + 1} grinder" />
+								</label>
+								<label class="row-field">
+									<span>Setting</span>
+									<input name="grind_setting" placeholder="27 or 7-8" bind:value={row.setting} aria-label="Grind {i + 1} setting" />
+								</label>
+								<button type="button" class="ghost remove-row" aria-label="Remove grind {i + 1}" onclick={() => grindRows.splice(i, 1)}>−</button>
+							</div>
+						{/each}
+						<button type="button" class="ghost add-row" onclick={() => grindRows.push({ type: '', setting: '' })}>+ Grinder</button>
+						{#if errors.grinds}<span class="form-error">{errors.grinds}</span>{/if}
+					</fieldset>
+				</section>
+
+				<label>
+					Notes
+					<textarea name="notes" rows="3">{dialin?.notes ?? ''}</textarea>
+				</label>
 			</form>
-		{/if}
+
+			{#if dialin}
+				<form method="POST" action="?/delete" use:enhance={deleteHandler} class="delete-form">
+					<input type="hidden" name="id" value={dialin.id} />
+					<button class="danger">Delete this dial-in</button>
+				</form>
+			{/if}
+		</div>
+
+		<footer class="drawer-actions">
+			<button type="button" class="ghost cancel" onclick={() => (open = false)}>Cancel</button>
+			<button type="submit" form="dialin-editor-form" class="primary">
+				{dialin ? 'Save changes' : 'Add dial-in'}
+			</button>
+		</footer>
 	{/key}
 </dialog>
 
@@ -204,18 +248,25 @@
 	.drawer {
 		position: fixed;
 		inset: 0 0 0 auto;
+		box-sizing: border-box;
+		display: grid;
+		grid-template-rows: auto minmax(0, 1fr) auto;
 		margin: 0;
+		width: min(29rem, 100vw);
+		max-width: 100vw;
 		height: 100dvh;
 		max-height: 100dvh;
-		width: min(26rem, 100vw);
-		max-width: 100vw;
+		overflow: hidden;
 		border: none;
 		border-left: 1px solid var(--line);
 		background: var(--surface);
 		color: var(--ink);
-		padding: 1.5rem;
-		overflow-y: auto;
+		padding: 0;
 		font-family: var(--sans);
+	}
+
+	.drawer:not([open]) {
+		display: none;
 	}
 
 	.drawer::backdrop {
@@ -226,25 +277,71 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		margin-bottom: 1.25rem;
+		gap: 1rem;
+		padding: 1.25rem 1.5rem 1rem;
+		border-bottom: 1px solid var(--line-soft);
 	}
 
 	.drawer-header h2 {
 		font-family: var(--serif);
-		font-size: 1.2rem;
+		font-size: 1.25rem;
 		margin: 0;
+		overflow-wrap: anywhere;
 	}
 
+	.drawer-heading {
+		min-width: 0;
+	}
+
+	.drawer-kicker {
+		margin: 0 0 0.2rem;
+		font-size: 0.65rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		color: var(--accent);
+	}
+
+	.drawer-scroll {
+		min-width: 0;
+		min-height: 0;
+		overflow-x: hidden;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding: 1.25rem 1.5rem 2rem;
+	}
+
+	.form-section > label,
 	form > label,
 	.grid2 {
 		display: block;
 		margin-bottom: 0.9rem;
 	}
 
+	.form-section {
+		margin: 0 0 1.35rem;
+		padding: 0 0 1.35rem;
+		border-bottom: 1px solid var(--line-soft);
+	}
+
+	.section-title {
+		margin: 0 0 1rem;
+		font-family: var(--sans);
+		font-size: 0.72rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		color: var(--accent);
+	}
+
 	.grid2 {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 0.75rem;
+	}
+
+	.grid2 > * {
+		min-width: 0;
 	}
 
 	label {
@@ -276,7 +373,15 @@
 		border-color: var(--accent);
 	}
 
+	input:focus-visible,
+	textarea:focus-visible,
+	button:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
+
 	fieldset {
+		min-width: 0;
 		border: 1px solid var(--line-soft);
 		border-radius: 8px;
 		padding: 0.75rem;
@@ -299,6 +404,11 @@
 
 	.segmented label {
 		flex: 1;
+		display: flex;
+		min-height: 44px;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
 		text-align: center;
 		padding: 0.45rem 0;
 		border: 1px solid var(--line);
@@ -316,6 +426,11 @@
 		color: var(--accent);
 	}
 
+	.segmented label:focus-within {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
+
 	.segmented input {
 		position: absolute;
 		opacity: 0;
@@ -330,11 +445,25 @@
 	}
 
 	.grind-row {
-		grid-template-columns: 1fr 1fr auto;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
 	}
 
 	.pour-row {
-		grid-template-columns: 1fr 1fr 1.4fr auto;
+		grid-template-columns: minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 1.4fr) auto;
+	}
+
+	.row-field {
+		min-width: 0;
+	}
+
+	.row-field > span {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
 	}
 
 	.row input {
@@ -364,18 +493,34 @@
 		border: none;
 		font-size: 1.3rem;
 		line-height: 1;
-		padding: 0.2rem 0.5rem;
+		display: inline-grid;
+		width: 44px;
+		height: 44px;
+		place-items: center;
+		padding: 0;
 	}
 
 	.add-row {
 		margin-top: 0.2rem;
 	}
 
+	.remove-row {
+		display: inline-grid;
+		width: 44px;
+		height: 44px;
+		place-items: center;
+		padding: 0;
+	}
+
 	.drawer-actions {
 		display: flex;
 		justify-content: flex-end;
-		gap: 0.6rem;
-		margin-top: 1.25rem;
+		gap: 0.65rem;
+		margin: 0;
+		padding: 1rem 1.5rem;
+		border-top: 1px solid var(--line-soft);
+		background: var(--surface);
+		box-shadow: 0 -8px 24px color-mix(in srgb, var(--ink) 5%, transparent);
 	}
 
 	.primary {
@@ -420,13 +565,87 @@
 
 	@media (max-width: 520px) {
 		.drawer {
-			inset: auto 0 0 0;
+			inset: 0;
 			width: 100%;
+			max-width: none;
+			height: 100dvh;
+			max-height: 100dvh;
+			border: none;
+			border-radius: 0;
+		}
+
+		.drawer-header {
+			padding-top: max(0.85rem, env(safe-area-inset-top));
+			padding-right: max(1rem, env(safe-area-inset-right));
+			padding-left: max(1rem, env(safe-area-inset-left));
+		}
+
+		.drawer-scroll {
+			padding: 1rem max(1rem, env(safe-area-inset-right)) 1.5rem
+				max(1rem, env(safe-area-inset-left));
+		}
+
+		input,
+		textarea {
+			min-height: 44px;
+			font-size: 1rem;
+			padding: 0.7rem 0.75rem;
+		}
+
+		.grind-row,
+		.pour-row {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 0.65rem;
+			padding: 0.75rem;
+			border: 1px solid var(--line-soft);
+			border-radius: 10px;
+			background: color-mix(in srgb, var(--bg) 65%, var(--surface));
+		}
+
+		.row-field > span {
+			position: static;
+			display: block;
+			width: auto;
 			height: auto;
-			max-height: 88dvh;
-			border-left: none;
-			border-top: 1px solid var(--line);
-			border-radius: 14px 14px 0 0;
+			margin: 0;
+			overflow: visible;
+			clip-path: none;
+			white-space: normal;
+		}
+
+		.row-field input {
+			margin-top: 0.3rem;
+		}
+
+		.remove-row {
+			justify-self: end;
+		}
+
+		.add-row,
+		.danger {
+			min-height: 44px;
+		}
+
+		.drawer-actions {
+			padding-top: 0.75rem;
+			padding-right: max(1rem, env(safe-area-inset-right));
+			padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+			padding-left: max(1rem, env(safe-area-inset-left));
+		}
+
+		.drawer-actions button {
+			flex: 1;
+			min-height: 44px;
+		}
+
+		.drawer-actions .primary {
+			flex: 1.35;
+		}
+	}
+
+	@media (max-width: 360px) {
+		.grid2 {
+			grid-template-columns: minmax(0, 1fr);
 		}
 	}
 </style>
