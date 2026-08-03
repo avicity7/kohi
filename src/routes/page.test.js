@@ -56,6 +56,41 @@ function elementWithClass(node, name) {
 	return visit(node, item => item.type === 'Element' && elementClasses(item).includes(name));
 }
 
+test('cards carry a recency stamp', () => {
+	const card = elementWithClass(component.html, 'card');
+	assert.ok(card);
+	assert.ok(elementWithClass(card, 'updated'));
+});
+
+test('view toggle offers cards and a comparison table', () => {
+	const toggle = elementWithClass(component.html, 'view-toggle');
+	assert.ok(toggle);
+
+	const buttons = [];
+	visit(toggle, node => {
+		if (node.type === 'Element' && node.name === 'button') buttons.push(node);
+		return false;
+	});
+	assert.equal(buttons.length, 2);
+	for (const button of buttons) {
+		assert.ok(button.attributes.some(a => a.type === 'Attribute' && a.name === 'aria-pressed'));
+	}
+
+	const headers = [];
+	visit(component.html, node => {
+		if (node.type === 'Element' && node.name === 'th') {
+			visit(node, item => {
+				if (item.type === 'Text') headers.push(item.data.trim());
+				return false;
+			});
+		}
+		return false;
+	});
+	for (const column of ['Dose', 'Yield', 'Ratio', 'Time', 'Grind', 'Updated']) {
+		assert.ok(headers.includes(column), `missing table column ${column}`);
+	}
+});
+
 test('mobile header keeps account actions beside the title', () => {
 	const actions = elementWithClass(component.html, 'header-actions');
 	assert.ok(actions);
@@ -79,7 +114,7 @@ test('mobile header keeps account actions beside the title', () => {
 	assert.equal(mobileActions['grid-row'], '1');
 	assert.equal(mobileActions['justify-self'], 'end');
 
-	const search = declarations(classRule(phone.block.children, 'search'));
+	const search = declarations(classRule(phone.block.children, 'search-wrap'));
 	assert.equal(search['grid-column'], '1 / -1');
 	assert.equal(search['grid-row'], '2');
 

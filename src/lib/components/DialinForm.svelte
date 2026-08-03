@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { untrack } from 'svelte';
 
-	let { open = $bindable(false), dialin = null, grinderNames = [] } = $props();
+	let { open = $bindable(false), dialin = null, grinderNames = [], lastGrinder = '' } = $props();
 
 	let dialogEl = $state(null);
 	let method = $state('espresso');
@@ -11,6 +11,12 @@
 	let errors = $state({});
 	let message = $state('');
 	let generation = $state(0);
+	let beanName = $state('');
+	let dirty = $state(false);
+	let confirmDiscard = $state(false);
+	let saving = $state(false);
+	let deleteArmed = $state(false);
+	let deleting = $state(false);
 
 	$effect(() => {
 		if (!dialogEl) return;
@@ -22,19 +28,48 @@
 	$effect(() => {
 		if (!open) return;
 		method = dialin?.method ?? 'espresso';
+		beanName = dialin?.bean ?? '';
 		grindRows = dialin?.grinds?.length
 			? dialin.grinds.map(g => ({ type: g.type ?? '', setting: g.setting }))
-			: [{ type: '', setting: '' }];
+			: [{ type: dialin ? '' : lastGrinder, setting: '' }];
 		pourRows = dialin?.pours?.length
 			? dialin.pours.map(p => ({ water_g: p.water_g, time_s: p.time_s, notes: p.notes ?? '' }))
 			: [];
 		errors = {};
 		message = '';
+		dirty = false;
+		confirmDiscard = false;
+		saving = false;
+		deleteArmed = false;
+		deleting = false;
 		generation = untrack(() => generation) + 1;
 	});
 
+	function markDirty() {
+		dirty = true;
+		confirmDiscard = false;
+	}
+
+	// First close attempt on a dirty form arms a styled "Discard changes?" step.
+	function requestClose() {
+		if (dirty && !confirmDiscard) {
+			confirmDiscard = true;
+			return;
+		}
+		open = false;
+	}
+
+	function handleCancel(event) {
+		if (dirty && !confirmDiscard) {
+			event.preventDefault();
+			confirmDiscard = true;
+		}
+	}
+
 	function submitHandler() {
+		saving = true;
 		return async ({ result, update }) => {
+			saving = false;
 			if (result.type === 'success') {
 				open = false;
 			} else if (result.type === 'failure') {
@@ -46,11 +81,15 @@
 	}
 
 	function deleteHandler({ cancel }) {
-		if (!confirm(`Delete "${dialin.bean}"?`)) {
+		if (!deleteArmed) {
 			cancel();
+			deleteArmed = true;
 			return;
 		}
+		deleting = true;
 		return async ({ result, update }) => {
+			deleting = false;
+			deleteArmed = false;
 			if (result.type === 'success') open = false;
 			else if (result.type === 'failure') message = result.data?.message ?? 'Delete failed.';
 			await update();
@@ -62,15 +101,16 @@
 	bind:this={dialogEl}
 	class="drawer"
 	aria-labelledby="dialin-form-title"
+	oncancel={handleCancel}
 	onclose={() => (open = false)}
 >
 	{#key generation}
 		<header class="drawer-header">
 			<div class="drawer-heading">
 				<p class="drawer-kicker">{dialin ? 'Edit dial-in' : 'New dial-in'}</p>
-				<h2 id="dialin-form-title">{dialin?.bean ?? 'Coffee recipe'}</h2>
+				<h2 id="dialin-form-title">{beanName.trim() || dialin?.bean || 'Untitled coffee'}</h2>
 			</div>
-			<button type="button" class="ghost close" aria-label="Close" onclick={() => (open = false)}>×</button>
+			<button type="button" class="ghost close" aria-label="Close" onclick={requestClose}>×</button>
 		</header>
 
 		<div class="drawer-scroll">
@@ -81,6 +121,7 @@
 				method="POST"
 				action={dialin ? '?/update' : '?/create'}
 				use:enhance={submitHandler}
+				oninput={markDirty}
 			>
 				{#if dialin}<input type="hidden" name="id" value={dialin.id} />{/if}
 
@@ -89,7 +130,7 @@
 
 					<label>
 						Bean
-						<input name="bean" required value={dialin?.bean ?? ''} />
+						<input name="bean" required bind:value={beanName} />
 						{#if errors.bean}<span class="form-error">{errors.bean}</span>{/if}
 					</label>
 
@@ -157,18 +198,22 @@
 								<input name="brewer" placeholder="V60" value={dialin?.brewer ?? ''} />
 							</label>
 						</div>
-						<div class="grid2">
-							<label>
-								Bloom (s)
-								<input name="bloom_time_s" placeholder="45" value={dialin?.bloom_time_s ?? ''} />
-								{#if errors.bloom_time_s}<span class="form-error">{errors.bloom_time_s}</span>{/if}
-							</label>
-							<label>
-								Total time (s)
-								<input name="total_time_s" placeholder="210" value={dialin?.total_time_s ?? ''} />
-								{#if errors.total_time_s}<span class="form-error">{errors.total_time_s}</span>{/if}
-							</label>
-						</div>
+						{#if pourRows.length === 0}
+							<div class="grid2">
+								<label>
+									Bloom (s)
+									<input name="bloom_time_s" placeholder="45" value={dialin?.bloom_time_s ?? ''} />
+									{#if errors.bloom_time_s}<span class="form-error">{errors.bloom_time_s}</span>{/if}
+								</label>
+								<label>
+									Total time (s)
+									<input name="total_time_s" placeholder="210" value={dialin?.total_time_s ?? ''} />
+									{#if errors.total_time_s}<span class="form-error">{errors.total_time_s}</span>{/if}
+								</label>
+							</div>
+						{:else}
+							<p class="pour-hint">Timing comes from the pour schedule below.</p>
+						{/if}
 
 						<fieldset class="rows">
 							<legend>Pour schedule</legend>
@@ -176,20 +221,20 @@
 								<div class="row pour-row">
 									<label class="row-field">
 										<span>Water (g)</span>
-										<input name="pour_water" type="number" step="1" min="0" placeholder="g" bind:value={row.water_g} aria-label="Pour {i + 1} water (g)" />
+										<input name="pour_water" type="number" step="1" min="0" placeholder="60" bind:value={row.water_g} aria-label="Pour {i + 1} water (g)" />
 									</label>
 									<label class="row-field">
 										<span>At (s)</span>
-										<input name="pour_time" type="number" step="1" min="0" placeholder="@ s" bind:value={row.time_s} aria-label="Pour {i + 1} time (s)" />
+										<input name="pour_time" type="number" step="1" min="0" placeholder="45" bind:value={row.time_s} aria-label="Pour {i + 1} time (s)" />
 									</label>
 									<label class="row-field">
 										<span>Note</span>
 										<input name="pour_notes" placeholder="Optional" bind:value={row.notes} aria-label="Pour {i + 1} note" />
 									</label>
-									<button type="button" class="ghost remove-row" aria-label="Remove pour {i + 1}" onclick={() => pourRows.splice(i, 1)}>−</button>
+									<button type="button" class="ghost remove-row" aria-label="Remove pour {i + 1}" onclick={() => { pourRows.splice(i, 1); markDirty(); }}>−</button>
 								</div>
 							{/each}
-							<button type="button" class="ghost add-row" onclick={() => pourRows.push({ water_g: '', time_s: '', notes: '' })}>+ Pour</button>
+							<button type="button" class="ghost add-row" onclick={() => { pourRows.push({ water_g: '', time_s: '', notes: '' }); markDirty(); }}>+ Pour</button>
 							{#if errors.pours}<span class="form-error">{errors.pours}</span>{/if}
 						</fieldset>
 					{/if}
@@ -207,16 +252,16 @@
 							<div class="row grind-row">
 								<label class="row-field">
 									<span>Grinder</span>
-									<input name="grind_type" list="grinder-names" placeholder="Optional" bind:value={row.type} aria-label="Grind {i + 1} grinder" />
+									<input name="grind_type" list="grinder-names" placeholder="K6" bind:value={row.type} aria-label="Grind {i + 1} grinder" />
 								</label>
 								<label class="row-field">
 									<span>Setting</span>
 									<input name="grind_setting" placeholder="27 or 7-8" bind:value={row.setting} aria-label="Grind {i + 1} setting" />
 								</label>
-								<button type="button" class="ghost remove-row" aria-label="Remove grind {i + 1}" onclick={() => grindRows.splice(i, 1)}>−</button>
+								<button type="button" class="ghost remove-row" aria-label="Remove grind {i + 1}" onclick={() => { grindRows.splice(i, 1); markDirty(); }}>−</button>
 							</div>
 						{/each}
-						<button type="button" class="ghost add-row" onclick={() => grindRows.push({ type: '', setting: '' })}>+ Grinder</button>
+						<button type="button" class="ghost add-row" onclick={() => { grindRows.push({ type: '', setting: '' }); markDirty(); }}>+ Grinder</button>
 						{#if errors.grinds}<span class="form-error">{errors.grinds}</span>{/if}
 					</fieldset>
 				</section>
@@ -230,15 +275,26 @@
 			{#if dialin}
 				<form method="POST" action="?/delete" use:enhance={deleteHandler} class="delete-form">
 					<input type="hidden" name="id" value={dialin.id} />
-					<button class="danger">Delete this dial-in</button>
+					{#if deleteArmed}
+						<div class="delete-confirm">
+							<button class="danger-solid" disabled={deleting}>
+								{deleting ? 'Deleting…' : 'Delete permanently'}
+							</button>
+							<button type="button" class="ghost" onclick={() => (deleteArmed = false)}>Keep</button>
+						</div>
+					{:else}
+						<button class="danger">Delete this dial-in</button>
+					{/if}
 				</form>
 			{/if}
 		</div>
 
 		<footer class="drawer-actions">
-			<button type="button" class="ghost cancel" onclick={() => (open = false)}>Cancel</button>
-			<button type="submit" form="dialin-editor-form" class="primary">
-				{dialin ? 'Save changes' : 'Add dial-in'}
+			<button type="button" class="ghost cancel" class:discard={confirmDiscard} onclick={requestClose}>
+				{confirmDiscard ? 'Discard changes?' : 'Cancel'}
+			</button>
+			<button type="submit" form="dialin-editor-form" class="primary" disabled={saving}>
+				{saving ? 'Saving…' : dialin ? 'Save changes' : 'Add dial-in'}
 			</button>
 		</footer>
 	{/key}
@@ -271,6 +327,50 @@
 
 	.drawer::backdrop {
 		background: rgba(0, 0, 0, 0.35);
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.drawer {
+			transition:
+				translate 0.22s ease,
+				opacity 0.22s ease,
+				display 0.22s allow-discrete,
+				overlay 0.22s allow-discrete;
+		}
+
+		.drawer:not([open]) {
+			translate: 100% 0;
+			opacity: 0;
+		}
+
+		.drawer[open] {
+			translate: 0 0;
+			opacity: 1;
+		}
+
+		@starting-style {
+			.drawer[open] {
+				translate: 100% 0;
+				opacity: 0;
+			}
+		}
+
+		.drawer::backdrop {
+			transition:
+				background 0.22s ease,
+				display 0.22s allow-discrete,
+				overlay 0.22s allow-discrete;
+		}
+
+		.drawer:not([open])::backdrop {
+			background: rgba(0, 0, 0, 0);
+		}
+
+		@starting-style {
+			.drawer[open]::backdrop {
+				background: rgba(0, 0, 0, 0);
+			}
+		}
 	}
 
 	.drawer-header {
@@ -345,7 +445,7 @@
 	}
 
 	label {
-		font-size: 0.7rem;
+		font-size: 0.72rem;
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.09em;
@@ -361,7 +461,7 @@
 		padding: 0.5rem 0.7rem;
 		border: 1px solid var(--line);
 		border-radius: 8px;
-		background: var(--bg);
+		background: var(--field);
 		color: var(--ink);
 		font-family: var(--sans);
 		font-size: 0.95rem;
@@ -441,7 +541,7 @@
 		display: grid;
 		gap: 0.4rem;
 		margin-bottom: 0.4rem;
-		align-items: center;
+		align-items: end;
 	}
 
 	.grind-row {
@@ -457,17 +557,13 @@
 	}
 
 	.row-field > span {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		margin: -1px;
-		overflow: hidden;
-		clip-path: inset(50%);
-		white-space: nowrap;
+		display: block;
 	}
 
-	.row input {
-		margin-top: 0;
+	.pour-hint {
+		margin: 0 0 0.9rem;
+		font-size: 0.8rem;
+		color: var(--ink-muted);
 	}
 
 	button {
@@ -543,13 +639,40 @@
 	.danger {
 		background: none;
 		border: none;
-		color: #b3382c;
+		color: var(--danger);
 		font-size: 0.85rem;
+	}
+
+	.delete-confirm {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 0.65rem;
+	}
+
+	.danger-solid {
+		background: var(--danger);
+		color: var(--bg);
+		border: none;
+		border-radius: 8px;
+		padding: 0.5rem 1rem;
+		font-size: 0.85rem;
+		font-weight: 600;
+	}
+
+	.cancel.discard {
+		border-color: var(--danger);
+		color: var(--danger);
+	}
+
+	button:disabled {
+		opacity: 0.6;
+		cursor: default;
 	}
 
 	.form-error {
 		display: block;
-		color: #b3382c;
+		color: var(--danger);
 		font-size: 0.8rem;
 		text-transform: none;
 		letter-spacing: normal;
@@ -557,7 +680,7 @@
 	}
 
 	.banner {
-		border: 1px solid color-mix(in srgb, #b3382c 40%, var(--line));
+		border: 1px solid color-mix(in srgb, var(--danger) 40%, var(--line));
 		border-radius: 8px;
 		padding: 0.6rem 0.8rem;
 		margin: 0 0 1rem;
@@ -602,17 +725,6 @@
 			background: color-mix(in srgb, var(--bg) 65%, var(--surface));
 		}
 
-		.row-field > span {
-			position: static;
-			display: block;
-			width: auto;
-			height: auto;
-			margin: 0;
-			overflow: visible;
-			clip-path: none;
-			white-space: normal;
-		}
-
 		.row-field input {
 			margin-top: 0.3rem;
 		}
@@ -622,7 +734,8 @@
 		}
 
 		.add-row,
-		.danger {
+		.danger,
+		.danger-solid {
 			min-height: 44px;
 		}
 

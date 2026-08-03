@@ -1,7 +1,18 @@
 <script>
 	import { enhance } from '$app/forms';
+	import favicon from '$lib/assets/favicon.svg';
 
 	let { form } = $props();
+
+	let signingIn = $state(false);
+
+	function submitHandler() {
+		signingIn = true;
+		return async ({ update }) => {
+			await update();
+			signingIn = false;
+		};
+	}
 </script>
 
 <svelte:head>
@@ -9,14 +20,15 @@
 </svelte:head>
 
 <main>
+	<img class="mark" src={favicon} alt="" width="44" height="44" />
 	<h1>Sign in</h1>
-	<form method="POST" action="?/login" use:enhance>
+	<form method="POST" action="?/login" use:enhance={submitHandler}>
 		<label>
 			Password
 			<input type="password" name="password" required autocomplete="current-password" />
 		</label>
 		{#if form?.message}<p class="form-error" role="alert">{form.message}</p>{/if}
-		<button>Sign in</button>
+		<button disabled={signingIn}>{signingIn ? 'Signing in…' : 'Sign in'}</button>
 	</form>
 	<a href="/">← Back to Kohi</a>
 </main>
@@ -27,6 +39,12 @@
 		margin: 18vh auto 0;
 		padding: 0 1.5rem;
 		font-family: var(--sans);
+	}
+
+	.mark {
+		display: block;
+		border-radius: 10px;
+		margin-bottom: 1rem;
 	}
 
 	h1 {
@@ -52,7 +70,7 @@
 		padding: 0.55rem 0.85rem;
 		border: 1px solid var(--line);
 		border-radius: 8px;
-		background: var(--surface);
+		background: var(--field);
 		color: var(--ink);
 		font-size: 1rem;
 	}
@@ -75,8 +93,13 @@
 		cursor: pointer;
 	}
 
+	button:disabled {
+		opacity: 0.6;
+		cursor: default;
+	}
+
 	.form-error {
-		color: #b3382c;
+		color: var(--danger);
 		font-size: 0.85rem;
 		margin: 0.75rem 0 0;
 	}

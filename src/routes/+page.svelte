@@ -1,9 +1,31 @@
 <script>
-	import { getGrinds, formatRange, filterEntries, getGrinderNames } from '$lib';
+	import { getGrinds, formatRange, filterEntries, getGrinderNames, formatRelativeDate } from '$lib';
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
+	import favicon from '$lib/assets/favicon.svg';
 	import DialinForm from '$lib/components/DialinForm.svelte';
 
 	let { data } = $props();
+
+	let view = $state('cards');
+	let wideViewport = $state(false);
+	// The table needs room; below the toggle's own breakpoint always fall back to cards.
+	const effectiveView = $derived(view === 'compact' && wideViewport ? 'compact' : 'cards');
+
+	onMount(() => {
+		const stored = localStorage.getItem('kohi:view');
+		if (stored === 'compact' || stored === 'cards') view = stored;
+		const mq = window.matchMedia('(min-width: 760px)');
+		wideViewport = mq.matches;
+		const onChange = event => (wideViewport = event.matches);
+		mq.addEventListener('change', onChange);
+		return () => mq.removeEventListener('change', onChange);
+	});
+
+	function setView(next) {
+		view = next;
+		localStorage.setItem('kohi:view', next);
+	}
 
 	let drawerOpen = $state(false);
 	let editing = $state(null);
@@ -26,6 +48,8 @@
 
 	const methods = $derived([...new Set(data.dialins.map(d => d.method))].filter(Boolean));
 	const grinderNames = $derived(getGrinderNames(data.dialins));
+	// Entries arrive most-recently-updated first, so the first named grinder is the last one used.
+	const lastGrinder = $derived(grinderNames[0] ?? '');
 
 	const filtered = $derived(
 		filterEntries(data.dialins, { query, method: methodFilter, grinder: grinderFilter })
@@ -35,7 +59,15 @@
 
 	const filtering = $derived(query.trim() !== '' || methodFilter !== null || grinderFilter !== null);
 
+	function clearFilters() {
+		query = '';
+		methodFilter = null;
+		grinderFilter = null;
+	}
+
 	let searchEl = $state(null);
+	let scrollY = $state(0);
+	const scrolled = $derived(scrollY > 16);
 
 	function handleKeydown(event) {
 		if (event.key !== '/') return;
@@ -72,6 +104,16 @@
 		return `1:${ratio.toFixed(1)}`;
 	}
 
+	function recencyLabel(entry) {
+		const stamp = formatRelativeDate(entry.updated_at ?? entry.created_at);
+		if (!stamp) return '';
+		const changed =
+			entry.created_at &&
+			entry.updated_at &&
+			new Date(entry.updated_at).getTime() !== new Date(entry.created_at).getTime();
+		return `${changed ? 'Updated' : 'Added'} ${stamp}`;
+	}
+
 	function getTotalTime(entry) {
 		// If pours array exists, return the last pour's time
 		if (entry.pours && entry.pours.length > 0) {
@@ -82,17 +124,17 @@
 	}
 
 	const icons = {
-		dose: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v17"/><path d="M5 8l7-5 7 5"/><path d="M3 21h18"/><circle cx="7" cy="15" r="2"/><circle cx="17" cy="15" r="2"/></svg>`,
-		yield: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>`,
-		ratio: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>`,
-		time: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
-		grind: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
-		temp: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>`,
-		water: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>`,
-		brewer: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>`,
-		bloom: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/><line x1="12" y1="8" x2="12" y2="14"/></svg>`,
-		pour: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16.5L12 11.5L17 16.5"/><path d="M12 11.5V21"/><circle cx="12" cy="5" r="3"/></svg>`,
-		notes: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
+		dose: `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v17"/><path d="M5 8l7-5 7 5"/><path d="M3 21h18"/><circle cx="7" cy="15" r="2"/><circle cx="17" cy="15" r="2"/></svg>`,
+		yield: `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>`,
+		ratio: `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>`,
+		time: `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+		grind: `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+		temp: `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>`,
+		water: `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>`,
+		brewer: `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>`,
+		bloom: `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/><line x1="12" y1="8" x2="12" y2="14"/></svg>`,
+		pour: `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16.5L12 11.5L17 16.5"/><path d="M12 11.5V21"/><circle cx="12" cy="5" r="3"/></svg>`,
+		notes: `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
 	};
 </script>
 
@@ -100,22 +142,28 @@
 	<title>Kohi · Coffee Dial-In Log</title>
 </svelte:head>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} bind:scrollY={scrollY} />
 
-<main>
-	<header class="site-header">
+<main class:wide={effectiveView === 'compact'}>
+	<header class="site-header" class:scrolled>
 		<div class="site-title">
-			<h1>Kohi</h1>
-			<p class="subtitle">Coffee Dial-In Log</p>
+			<img class="site-mark" src={favicon} alt="" width="30" height="30" />
+			<div>
+				<h1>Kohi</h1>
+				<p class="subtitle">Coffee Dial-In Log</p>
+			</div>
 		</div>
-		<input
-			class="search"
-			type="search"
-			placeholder="Search beans, roasters, notes&hellip; ( / )"
-			aria-label="Search dial-ins"
-			bind:this={searchEl}
-			bind:value={query}
-		/>
+		<div class="search-wrap">
+			<input
+				class="search"
+				type="search"
+				placeholder="Search beans, roasters, notes&hellip;"
+				aria-label="Search dial-ins"
+				bind:this={searchEl}
+				bind:value={query}
+			/>
+			<kbd class="search-kbd" aria-hidden="true">/</kbd>
+		</div>
 		<div class="header-actions">
 			{#if data.authed}
 				<button class="chip add-chip" onclick={openNew}>+ Add</button>
@@ -126,7 +174,7 @@
 				<a class="chip auth-chip" href="/login">Sign in</a>
 			{/if}
 		</div>
-		{#if methods.length > 1 || grinderNames.length > 0}
+		{#if methods.length > 1 || grinderNames.length > 0 || data.dialins.length > 0}
 			<div class="chips" role="group" aria-label="Quick filters">
 				{#if methods.length > 1}
 					{#each methods as method}
@@ -136,7 +184,7 @@
 							aria-pressed={methodFilter === method}
 							onclick={() => (methodFilter = methodFilter === method ? null : method)}
 						>
-							{methodLabels[method] ?? method}
+							{methodLabels[method] ?? method}{#if methodFilter === method}<span class="chip-x" aria-hidden="true">×</span>{/if}
 						</button>
 					{/each}
 				{/if}
@@ -147,22 +195,108 @@
 						aria-pressed={grinderFilter === grinder}
 						onclick={() => (grinderFilter = grinderFilter === grinder ? null : grinder)}
 					>
-						{grinder}
+						{grinder}{#if grinderFilter === grinder}<span class="chip-x" aria-hidden="true">×</span>{/if}
 					</button>
 				{/each}
+				{#if data.dialins.length > 0}
+					<div class="view-toggle" role="group" aria-label="Layout">
+						<button
+							class="chip"
+							class:active={view === 'cards'}
+							aria-pressed={view === 'cards'}
+							onclick={() => setView('cards')}
+						>
+							Cards
+						</button>
+						<button
+							class="chip"
+							class:active={view === 'compact'}
+							aria-pressed={view === 'compact'}
+							onclick={() => setView('compact')}
+						>
+							Table
+						</button>
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</header>
 
-	{#if filtering && espresso.length === 0 && pourover.length === 0}
-		<p class="empty">No entries match the current filters.</p>
+	{#if filtering && data.dialins.length > 0 && espresso.length === 0 && pourover.length === 0}
+		<div class="empty">
+			<p>No entries match the current filters.</p>
+			<button class="chip" onclick={clearFilters}>Clear filters</button>
+		</div>
+	{/if}
+
+	{#if data.dialins.length === 0}
+		<div class="hero-empty">
+			<img src={favicon} alt="" width="56" height="56" />
+			<p class="tagline">A quiet log of espresso and pour-over dial-ins.</p>
+			{#if data.authed}
+				<button class="chip add-chip" onclick={openNew}>+ Add your first dial-in</button>
+			{/if}
+		</div>
 	{/if}
 
 	{#if espresso.length > 0}
 		<section>
 			<h2>Espresso <span class="count">{espresso.length}</span></h2>
+			{#if effectiveView === 'compact'}
+				<div class="table-wrap">
+					<table>
+						<thead>
+							<tr>
+								<th scope="col" class="td-bean">Bean</th>
+								<th scope="col">Dose</th>
+								<th scope="col">Yield</th>
+								<th scope="col">Ratio</th>
+								<th scope="col">Time</th>
+								<th scope="col">Grind</th>
+								<th scope="col">Temp</th>
+								<th scope="col">Updated</th>
+								{#if data.authed}<th scope="col"><span class="sr-only">Edit</span></th>{/if}
+							</tr>
+						</thead>
+						<tbody>
+							{#each espresso as entry}
+								{@const grinds = getGrinds(entry)}
+								<tr>
+									<th scope="row" class="td-bean">
+										<span class="row-roaster">{entry.roaster}</span>
+										<span class="row-bean">{entry.bean}</span>
+									</th>
+									<td>{entry.dose_g != null ? `${entry.dose_g}g` : '—'}</td>
+									<td>{entry.yield_g != null ? `${entry.yield_g}g` : '—'}</td>
+									<td>
+										{entry.dose_g != null && entry.yield_g != null
+											? calculateRatio(entry.dose_g, entry.yield_g)
+											: '—'}
+									</td>
+									<td>{entry.time_s != null ? formatTime(entry.time_s) : '—'}</td>
+									<td class="td-grind">
+										{grinds.length
+											? grinds
+													.map(g => (g.type ? `${g.type} ${formatRange(g.setting)}` : formatRange(g.setting)))
+													.join(' · ')
+											: '—'}
+									</td>
+									<td>{entry.temperature_c ? `${entry.temperature_c}°C` : '—'}</td>
+									<td class="td-updated">{formatRelativeDate(entry.updated_at ?? entry.created_at)}</td>
+									{#if data.authed}
+										<td class="td-edit">
+											<button class="edit-btn" aria-label="Edit {entry.bean}" onclick={() => openEdit(entry)}>✎</button>
+										</td>
+									{/if}
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{:else}
 			{#each espresso as entry}
 				{@const grinds = getGrinds(entry)}
+				{@const stamp = recencyLabel(entry)}
 				<article class="card">
 					<div class="card-header">
 						<div class="card-title">
@@ -226,16 +360,68 @@
 							<p class="notes-text">{entry.notes}</p>
 						</div>
 					{/if}
+					{#if stamp}<p class="updated">{stamp}</p>{/if}
 				</article>
 			{/each}
+			{/if}
 		</section>
 	{/if}
 
 	{#if pourover.length > 0}
 		<section>
 			<h2>Pour Over <span class="count">{pourover.length}</span></h2>
+			{#if effectiveView === 'compact'}
+				<div class="table-wrap">
+					<table>
+						<thead>
+							<tr>
+								<th scope="col" class="td-bean">Bean</th>
+								<th scope="col">Dose</th>
+								<th scope="col">Water</th>
+								<th scope="col">Brewer</th>
+								<th scope="col">Grind</th>
+								<th scope="col">Temp</th>
+								<th scope="col">Time</th>
+								<th scope="col">Updated</th>
+								{#if data.authed}<th scope="col"><span class="sr-only">Edit</span></th>{/if}
+							</tr>
+						</thead>
+						<tbody>
+							{#each pourover as entry}
+								{@const grinds = getGrinds(entry)}
+								{@const total = getTotalTime(entry)}
+								<tr>
+									<th scope="row" class="td-bean">
+										<span class="row-roaster">{entry.roaster}</span>
+										<span class="row-bean">{entry.bean}</span>
+									</th>
+									<td>{entry.dose_g != null ? `${entry.dose_g}g` : '—'}</td>
+									<td>{entry.water_g != null ? `${entry.water_g}g` : '—'}</td>
+									<td>{entry.brewer ?? '—'}</td>
+									<td class="td-grind">
+										{grinds.length
+											? grinds
+													.map(g => (g.type ? `${g.type} ${formatRange(g.setting)}` : formatRange(g.setting)))
+													.join(' · ')
+											: '—'}
+									</td>
+									<td>{entry.temperature_c ? `${entry.temperature_c}°C` : '—'}</td>
+									<td>{total != null ? formatTime(total) : '—'}</td>
+									<td class="td-updated">{formatRelativeDate(entry.updated_at ?? entry.created_at)}</td>
+									{#if data.authed}
+										<td class="td-edit">
+											<button class="edit-btn" aria-label="Edit {entry.bean}" onclick={() => openEdit(entry)}>✎</button>
+										</td>
+									{/if}
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{:else}
 			{#each pourover as entry}
 				{@const grinds = getGrinds(entry)}
+				{@const stamp = recencyLabel(entry)}
 				<article class="card">
 					<div class="card-header">
 						<div class="card-title">
@@ -347,19 +533,31 @@
 							<p class="notes-text">{entry.notes}</p>
 						</div>
 					{/if}
+					{#if stamp}<p class="updated">{stamp}</p>{/if}
 				</article>
 			{/each}
+			{/if}
 		</section>
+	{/if}
+
+	{#if data.authed}
+		<footer class="site-footer">
+			<a href="/export.yaml">Export YAML</a>
+		</footer>
 	{/if}
 </main>
 
-<DialinForm bind:open={drawerOpen} dialin={editing} grinderNames={grinderNames} />
+<DialinForm bind:open={drawerOpen} dialin={editing} grinderNames={grinderNames} lastGrinder={lastGrinder} />
 
 <style>
 	main {
 		max-width: 680px;
 		margin: 0 auto;
 		padding: 0 1.5rem 4rem;
+	}
+
+	main.wide {
+		max-width: 60rem;
 	}
 
 	/* Sticky site header */
@@ -377,12 +575,29 @@
 		background: color-mix(in srgb, var(--bg) 85%, transparent);
 		-webkit-backdrop-filter: blur(10px);
 		backdrop-filter: blur(10px);
+		border-bottom: 1px solid transparent;
+		transition: border-color 0.2s ease;
+	}
+
+	.site-header.scrolled {
+		border-bottom-color: var(--line-soft);
 	}
 
 	@supports not (backdrop-filter: blur(10px)) {
 		.site-header {
 			background: var(--bg);
 		}
+	}
+
+	.site-title {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+	}
+
+	.site-mark {
+		display: block;
+		border-radius: 8px;
 	}
 
 	h1 {
@@ -394,7 +609,7 @@
 
 	.subtitle {
 		font-family: var(--sans);
-		font-size: 0.68rem;
+		font-size: 0.72rem;
 		font-weight: 500;
 		text-transform: uppercase;
 		letter-spacing: 0.14em;
@@ -402,17 +617,47 @@
 		margin: 0.15rem 0 0;
 	}
 
-	.search {
+	.search-wrap {
+		position: relative;
 		flex-shrink: 1;
 		width: min(16rem, 100%);
-		padding: 0.55rem 1rem;
+	}
+
+	.search-kbd {
+		position: absolute;
+		right: 0.8rem;
+		top: 50%;
+		translate: 0 -50%;
+		font-family: var(--sans);
+		font-size: 0.7rem;
+		color: var(--ink-muted);
+		border: 1px solid var(--line);
+		border-radius: 4px;
+		padding: 0.05rem 0.35rem;
+		background: var(--bg);
+		pointer-events: none;
+	}
+
+	.search-wrap:focus-within .search-kbd {
+		display: none;
+	}
+
+	@media (hover: none) {
+		.search-kbd {
+			display: none;
+		}
+	}
+
+	.search {
+		width: 100%;
+		box-sizing: border-box;
+		padding: 0.55rem 2.1rem 0.55rem 1rem;
 		border: 1px solid var(--line);
 		border-radius: 999px;
 		background: var(--surface);
 		font-family: var(--sans);
 		font-size: 0.9rem;
 		color: var(--ink);
-		outline: none;
 		transition: border-color 0.15s ease;
 	}
 
@@ -421,7 +666,15 @@
 	}
 
 	.search:focus {
+		outline: none;
 		border-color: var(--accent);
+	}
+
+	.search:focus-visible,
+	.chip:focus-visible,
+	.edit-btn:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
 	}
 
 	.header-actions {
@@ -459,8 +712,118 @@
 
 	.chip.active {
 		border-color: var(--accent);
-		background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+		background: var(--accent);
+		color: var(--bg);
+	}
+
+	.chip-x {
+		margin-left: 0.35rem;
+		opacity: 0.8;
+	}
+
+	.view-toggle {
+		margin-left: auto;
+		display: flex;
+		gap: 0.4rem;
+	}
+
+	@media (max-width: 760px) {
+		.view-toggle {
+			display: none;
+		}
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	/* Compact comparison table */
+	.table-wrap {
+		overflow-x: auto;
+		background: var(--surface);
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		box-shadow: var(--shadow);
+	}
+
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		font-family: var(--sans);
+		font-size: 0.88rem;
+	}
+
+	thead th {
+		text-align: left;
+		font-size: 0.72rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.09em;
+		color: var(--ink-muted);
+		padding: 0.75rem 0.9rem;
+		border-bottom: 1px solid var(--line);
+		white-space: nowrap;
+	}
+
+	tbody th,
+	tbody td {
+		text-align: left;
+		padding: 0.7rem 0.9rem;
+		border-bottom: 1px solid var(--line-soft);
+		font-weight: 500;
+		font-variant-numeric: tabular-nums;
+		color: var(--ink);
+		white-space: nowrap;
+		vertical-align: top;
+	}
+
+	tbody tr:last-child th,
+	tbody tr:last-child td {
+		border-bottom: none;
+	}
+
+	tbody tr:hover {
+		background: color-mix(in srgb, var(--accent) 5%, transparent);
+	}
+
+	.td-bean {
+		white-space: normal;
+		min-width: 11rem;
+	}
+
+	.row-roaster {
+		display: block;
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
 		color: var(--accent);
+		margin-bottom: 0.15rem;
+	}
+
+	.row-bean {
+		font-family: var(--serif);
+		font-size: 1rem;
+		font-weight: 600;
+	}
+
+	.td-grind {
+		white-space: normal;
+	}
+
+	.td-updated {
+		color: var(--ink-muted);
+		font-size: 0.8rem;
+	}
+
+	.td-edit {
+		text-align: right;
 	}
 
 	.empty {
@@ -470,6 +833,28 @@
 		text-align: center;
 		padding: 3rem 0;
 		margin: 0;
+	}
+
+	.empty p {
+		margin: 0 0 1rem;
+	}
+
+	.hero-empty {
+		text-align: center;
+		padding: 4rem 0;
+	}
+
+	.hero-empty img {
+		border-radius: 14px;
+		margin-bottom: 1.25rem;
+	}
+
+	.tagline {
+		font-family: var(--serif);
+		font-style: italic;
+		font-size: 1.05rem;
+		color: var(--ink-soft);
+		margin: 0 0 1.5rem;
 	}
 
 	/* Section headers */
@@ -561,7 +946,7 @@
 
 	.label {
 		font-family: var(--sans);
-		font-size: 0.68rem;
+		font-size: 0.72rem;
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.09em;
@@ -610,7 +995,7 @@
 
 	.notes-label {
 		font-family: var(--sans);
-		font-size: 0.68rem;
+		font-size: 0.72rem;
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.09em;
@@ -629,6 +1014,26 @@
 		color: var(--ink-soft);
 	}
 
+	.updated {
+		margin: 1.1rem 0 0;
+		font-family: var(--sans);
+		font-size: 0.72rem;
+		color: var(--ink-muted);
+	}
+
+	.site-footer {
+		margin-top: 3rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid var(--line-soft);
+		text-align: center;
+		font-family: var(--sans);
+		font-size: 0.8rem;
+	}
+
+	.site-footer a {
+		color: var(--ink-muted);
+	}
+
 	/* Pour schedule */
 	.pour-schedule {
 		margin-top: 1.35rem;
@@ -640,7 +1045,7 @@
 
 	.pour-schedule-label {
 		font-family: var(--sans);
-		font-size: 0.68rem;
+		font-size: 0.72rem;
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.09em;
@@ -756,7 +1161,7 @@
 			justify-self: end;
 		}
 
-		.search {
+		.search-wrap {
 			grid-column: 1 / -1;
 			grid-row: 2;
 			width: 100%;
@@ -777,6 +1182,27 @@
 
 		.params {
 			grid-template-columns: repeat(2, 1fr);
+		}
+
+		.site-title,
+		.header-actions {
+			max-height: 3.5rem;
+		}
+
+		.site-header.scrolled .site-title,
+		.site-header.scrolled .header-actions {
+			max-height: 0;
+			opacity: 0;
+			overflow: hidden;
+			margin: 0;
+			pointer-events: none;
+		}
+	}
+
+	@media (max-width: 520px) and (prefers-reduced-motion: no-preference) {
+		.site-title,
+		.header-actions {
+			transition: max-height 0.2s ease, opacity 0.15s ease;
 		}
 	}
 
