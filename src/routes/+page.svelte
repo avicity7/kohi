@@ -137,8 +137,11 @@
 <main class:wide={view === 'compact'}>
 	<header class="site-header" class:scrolled>
 		<div class="site-title">
-			<h1>Kohi</h1>
-			<p class="subtitle">Coffee Dial-In Log</p>
+			<img class="site-mark" src={favicon} alt="" width="30" height="30" />
+			<div>
+				<h1>Kohi</h1>
+				<p class="subtitle">Coffee Dial-In Log</p>
+			</div>
 		</div>
 		<input
 			class="search"
@@ -523,6 +526,12 @@
 			{/if}
 		</section>
 	{/if}
+
+	{#if data.authed}
+		<footer class="site-footer">
+			<a href="/export.yaml">Export YAML</a>
+		</footer>
+	{/if}
 </main>
 
 <DialinForm bind:open={drawerOpen} dialin={editing} grinderNames={grinderNames} />
@@ -565,6 +574,17 @@
 		.site-header {
 			background: var(--bg);
 		}
+	}
+
+	.site-title {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+	}
+
+	.site-mark {
+		display: block;
+		border-radius: 8px;
 	}
 
 	h1 {
@@ -954,6 +974,19 @@
 		margin: 1.1rem 0 0;
 		font-family: var(--sans);
 		font-size: 0.72rem;
+		color: var(--ink-muted);
+	}
+
+	.site-footer {
+		margin-top: 3rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid var(--line-soft);
+		text-align: center;
+		font-family: var(--sans);
+		font-size: 0.8rem;
+	}
+
+	.site-footer a {
 		color: var(--ink-muted);
 	}
 

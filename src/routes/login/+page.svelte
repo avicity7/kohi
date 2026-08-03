@@ -1,5 +1,6 @@
 <script>
 	import { enhance } from '$app/forms';
+	import favicon from '$lib/assets/favicon.svg';
 
 	let { form } = $props();
 
@@ -19,6 +20,7 @@
 </svelte:head>
 
 <main>
+	<img class="mark" src={favicon} alt="" width="44" height="44" />
 	<h1>Sign in</h1>
 	<form method="POST" action="?/login" use:enhance={submitHandler}>
 		<label>
@@ -37,6 +39,12 @@
 		margin: 18vh auto 0;
 		padding: 0 1.5rem;
 		font-family: var(--sans);
+	}
+
+	.mark {
+		display: block;
+		border-radius: 10px;
+		margin-bottom: 1rem;
 	}
 
 	h1 {
