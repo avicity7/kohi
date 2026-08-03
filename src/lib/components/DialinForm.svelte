@@ -11,6 +11,7 @@
 	let errors = $state({});
 	let message = $state('');
 	let generation = $state(0);
+	let beanName = $state('');
 	let dirty = $state(false);
 	let confirmDiscard = $state(false);
 	let saving = $state(false);
@@ -27,6 +28,7 @@
 	$effect(() => {
 		if (!open) return;
 		method = dialin?.method ?? 'espresso';
+		beanName = dialin?.bean ?? '';
 		grindRows = dialin?.grinds?.length
 			? dialin.grinds.map(g => ({ type: g.type ?? '', setting: g.setting }))
 			: [{ type: '', setting: '' }];
@@ -106,7 +108,7 @@
 		<header class="drawer-header">
 			<div class="drawer-heading">
 				<p class="drawer-kicker">{dialin ? 'Edit dial-in' : 'New dial-in'}</p>
-				<h2 id="dialin-form-title">{dialin?.bean ?? 'Coffee recipe'}</h2>
+				<h2 id="dialin-form-title">{beanName.trim() || dialin?.bean || 'Untitled coffee'}</h2>
 			</div>
 			<button type="button" class="ghost close" aria-label="Close" onclick={requestClose}>×</button>
 		</header>
@@ -128,7 +130,7 @@
 
 					<label>
 						Bean
-						<input name="bean" required value={dialin?.bean ?? ''} />
+						<input name="bean" required bind:value={beanName} />
 						{#if errors.bean}<span class="form-error">{errors.bean}</span>{/if}
 					</label>
 
@@ -196,18 +198,22 @@
 								<input name="brewer" placeholder="V60" value={dialin?.brewer ?? ''} />
 							</label>
 						</div>
-						<div class="grid2">
-							<label>
-								Bloom (s)
-								<input name="bloom_time_s" placeholder="45" value={dialin?.bloom_time_s ?? ''} />
-								{#if errors.bloom_time_s}<span class="form-error">{errors.bloom_time_s}</span>{/if}
-							</label>
-							<label>
-								Total time (s)
-								<input name="total_time_s" placeholder="210" value={dialin?.total_time_s ?? ''} />
-								{#if errors.total_time_s}<span class="form-error">{errors.total_time_s}</span>{/if}
-							</label>
-						</div>
+						{#if pourRows.length === 0}
+							<div class="grid2">
+								<label>
+									Bloom (s)
+									<input name="bloom_time_s" placeholder="45" value={dialin?.bloom_time_s ?? ''} />
+									{#if errors.bloom_time_s}<span class="form-error">{errors.bloom_time_s}</span>{/if}
+								</label>
+								<label>
+									Total time (s)
+									<input name="total_time_s" placeholder="210" value={dialin?.total_time_s ?? ''} />
+									{#if errors.total_time_s}<span class="form-error">{errors.total_time_s}</span>{/if}
+								</label>
+							</div>
+						{:else}
+							<p class="pour-hint">Timing comes from the pour schedule below.</p>
+						{/if}
 
 						<fieldset class="rows">
 							<legend>Pour schedule</legend>
@@ -215,11 +221,11 @@
 								<div class="row pour-row">
 									<label class="row-field">
 										<span>Water (g)</span>
-										<input name="pour_water" type="number" step="1" min="0" placeholder="g" bind:value={row.water_g} aria-label="Pour {i + 1} water (g)" />
+										<input name="pour_water" type="number" step="1" min="0" placeholder="60" bind:value={row.water_g} aria-label="Pour {i + 1} water (g)" />
 									</label>
 									<label class="row-field">
 										<span>At (s)</span>
-										<input name="pour_time" type="number" step="1" min="0" placeholder="@ s" bind:value={row.time_s} aria-label="Pour {i + 1} time (s)" />
+										<input name="pour_time" type="number" step="1" min="0" placeholder="45" bind:value={row.time_s} aria-label="Pour {i + 1} time (s)" />
 									</label>
 									<label class="row-field">
 										<span>Note</span>
@@ -246,7 +252,7 @@
 							<div class="row grind-row">
 								<label class="row-field">
 									<span>Grinder</span>
-									<input name="grind_type" list="grinder-names" placeholder="Optional" bind:value={row.type} aria-label="Grind {i + 1} grinder" />
+									<input name="grind_type" list="grinder-names" placeholder="K6" bind:value={row.type} aria-label="Grind {i + 1} grinder" />
 								</label>
 								<label class="row-field">
 									<span>Setting</span>
@@ -491,7 +497,7 @@
 		display: grid;
 		gap: 0.4rem;
 		margin-bottom: 0.4rem;
-		align-items: center;
+		align-items: end;
 	}
 
 	.grind-row {
@@ -507,17 +513,13 @@
 	}
 
 	.row-field > span {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		margin: -1px;
-		overflow: hidden;
-		clip-path: inset(50%);
-		white-space: nowrap;
+		display: block;
 	}
 
-	.row input {
-		margin-top: 0;
+	.pour-hint {
+		margin: 0 0 0.9rem;
+		font-size: 0.8rem;
+		color: var(--ink-muted);
 	}
 
 	button {
@@ -677,17 +679,6 @@
 			border: 1px solid var(--line-soft);
 			border-radius: 10px;
 			background: color-mix(in srgb, var(--bg) 65%, var(--surface));
-		}
-
-		.row-field > span {
-			position: static;
-			display: block;
-			width: auto;
-			height: auto;
-			margin: 0;
-			overflow: visible;
-			clip-path: none;
-			white-space: normal;
 		}
 
 		.row-field input {
