@@ -2,6 +2,7 @@
 	import { getGrinds, formatRange, filterEntries, getGrinderNames, formatRelativeDate } from '$lib';
 	import { enhance } from '$app/forms';
 	import { onMount } from 'svelte';
+	import favicon from '$lib/assets/favicon.svg';
 	import DialinForm from '$lib/components/DialinForm.svelte';
 
 	let { data } = $props();
@@ -47,6 +48,12 @@
 	const pourover = $derived(filtered.filter(d => d.method === 'pourover'));
 
 	const filtering = $derived(query.trim() !== '' || methodFilter !== null || grinderFilter !== null);
+
+	function clearFilters() {
+		query = '';
+		methodFilter = null;
+		grinderFilter = null;
+	}
 
 	let searchEl = $state(null);
 	let scrollY = $state(0);
@@ -161,7 +168,7 @@
 							aria-pressed={methodFilter === method}
 							onclick={() => (methodFilter = methodFilter === method ? null : method)}
 						>
-							{methodLabels[method] ?? method}
+							{methodLabels[method] ?? method}{#if methodFilter === method}<span class="chip-x" aria-hidden="true">×</span>{/if}
 						</button>
 					{/each}
 				{/if}
@@ -172,7 +179,7 @@
 						aria-pressed={grinderFilter === grinder}
 						onclick={() => (grinderFilter = grinderFilter === grinder ? null : grinder)}
 					>
-						{grinder}
+						{grinder}{#if grinderFilter === grinder}<span class="chip-x" aria-hidden="true">×</span>{/if}
 					</button>
 				{/each}
 				{#if data.dialins.length > 0}
@@ -199,8 +206,21 @@
 		{/if}
 	</header>
 
-	{#if filtering && espresso.length === 0 && pourover.length === 0}
-		<p class="empty">No entries match the current filters.</p>
+	{#if filtering && data.dialins.length > 0 && espresso.length === 0 && pourover.length === 0}
+		<div class="empty">
+			<p>No entries match the current filters.</p>
+			<button class="chip" onclick={clearFilters}>Clear filters</button>
+		</div>
+	{/if}
+
+	{#if data.dialins.length === 0}
+		<div class="hero-empty">
+			<img src={favicon} alt="" width="56" height="56" />
+			<p class="tagline">A quiet log of espresso and pour-over dial-ins.</p>
+			{#if data.authed}
+				<button class="chip add-chip" onclick={openNew}>+ Add your first dial-in</button>
+			{/if}
+		</div>
 	{/if}
 
 	{#if espresso.length > 0}
@@ -628,8 +648,13 @@
 
 	.chip.active {
 		border-color: var(--accent);
-		background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-		color: var(--accent);
+		background: var(--accent);
+		color: var(--bg);
+	}
+
+	.chip-x {
+		margin-left: 0.35rem;
+		opacity: 0.8;
 	}
 
 	.view-toggle {
@@ -744,6 +769,28 @@
 		text-align: center;
 		padding: 3rem 0;
 		margin: 0;
+	}
+
+	.empty p {
+		margin: 0 0 1rem;
+	}
+
+	.hero-empty {
+		text-align: center;
+		padding: 4rem 0;
+	}
+
+	.hero-empty img {
+		border-radius: 14px;
+		margin-bottom: 1.25rem;
+	}
+
+	.tagline {
+		font-family: var(--serif);
+		font-style: italic;
+		font-size: 1.05rem;
+		color: var(--ink-soft);
+		margin: 0 0 1.5rem;
 	}
 
 	/* Section headers */
