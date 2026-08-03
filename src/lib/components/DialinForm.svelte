@@ -11,6 +11,11 @@
 	let errors = $state({});
 	let message = $state('');
 	let generation = $state(0);
+	let dirty = $state(false);
+	let confirmDiscard = $state(false);
+	let saving = $state(false);
+	let deleteArmed = $state(false);
+	let deleting = $state(false);
 
 	$effect(() => {
 		if (!dialogEl) return;
@@ -30,11 +35,39 @@
 			: [];
 		errors = {};
 		message = '';
+		dirty = false;
+		confirmDiscard = false;
+		saving = false;
+		deleteArmed = false;
+		deleting = false;
 		generation = untrack(() => generation) + 1;
 	});
 
+	function markDirty() {
+		dirty = true;
+		confirmDiscard = false;
+	}
+
+	// First close attempt on a dirty form arms a styled "Discard changes?" step.
+	function requestClose() {
+		if (dirty && !confirmDiscard) {
+			confirmDiscard = true;
+			return;
+		}
+		open = false;
+	}
+
+	function handleCancel(event) {
+		if (dirty && !confirmDiscard) {
+			event.preventDefault();
+			confirmDiscard = true;
+		}
+	}
+
 	function submitHandler() {
+		saving = true;
 		return async ({ result, update }) => {
+			saving = false;
 			if (result.type === 'success') {
 				open = false;
 			} else if (result.type === 'failure') {
@@ -46,11 +79,15 @@
 	}
 
 	function deleteHandler({ cancel }) {
-		if (!confirm(`Delete "${dialin.bean}"?`)) {
+		if (!deleteArmed) {
 			cancel();
+			deleteArmed = true;
 			return;
 		}
+		deleting = true;
 		return async ({ result, update }) => {
+			deleting = false;
+			deleteArmed = false;
 			if (result.type === 'success') open = false;
 			else if (result.type === 'failure') message = result.data?.message ?? 'Delete failed.';
 			await update();
@@ -62,6 +99,7 @@
 	bind:this={dialogEl}
 	class="drawer"
 	aria-labelledby="dialin-form-title"
+	oncancel={handleCancel}
 	onclose={() => (open = false)}
 >
 	{#key generation}
@@ -70,7 +108,7 @@
 				<p class="drawer-kicker">{dialin ? 'Edit dial-in' : 'New dial-in'}</p>
 				<h2 id="dialin-form-title">{dialin?.bean ?? 'Coffee recipe'}</h2>
 			</div>
-			<button type="button" class="ghost close" aria-label="Close" onclick={() => (open = false)}>×</button>
+			<button type="button" class="ghost close" aria-label="Close" onclick={requestClose}>×</button>
 		</header>
 
 		<div class="drawer-scroll">
@@ -81,6 +119,7 @@
 				method="POST"
 				action={dialin ? '?/update' : '?/create'}
 				use:enhance={submitHandler}
+				oninput={markDirty}
 			>
 				{#if dialin}<input type="hidden" name="id" value={dialin.id} />{/if}
 
@@ -186,10 +225,10 @@
 										<span>Note</span>
 										<input name="pour_notes" placeholder="Optional" bind:value={row.notes} aria-label="Pour {i + 1} note" />
 									</label>
-									<button type="button" class="ghost remove-row" aria-label="Remove pour {i + 1}" onclick={() => pourRows.splice(i, 1)}>−</button>
+									<button type="button" class="ghost remove-row" aria-label="Remove pour {i + 1}" onclick={() => { pourRows.splice(i, 1); markDirty(); }}>−</button>
 								</div>
 							{/each}
-							<button type="button" class="ghost add-row" onclick={() => pourRows.push({ water_g: '', time_s: '', notes: '' })}>+ Pour</button>
+							<button type="button" class="ghost add-row" onclick={() => { pourRows.push({ water_g: '', time_s: '', notes: '' }); markDirty(); }}>+ Pour</button>
 							{#if errors.pours}<span class="form-error">{errors.pours}</span>{/if}
 						</fieldset>
 					{/if}
@@ -213,10 +252,10 @@
 									<span>Setting</span>
 									<input name="grind_setting" placeholder="27 or 7-8" bind:value={row.setting} aria-label="Grind {i + 1} setting" />
 								</label>
-								<button type="button" class="ghost remove-row" aria-label="Remove grind {i + 1}" onclick={() => grindRows.splice(i, 1)}>−</button>
+								<button type="button" class="ghost remove-row" aria-label="Remove grind {i + 1}" onclick={() => { grindRows.splice(i, 1); markDirty(); }}>−</button>
 							</div>
 						{/each}
-						<button type="button" class="ghost add-row" onclick={() => grindRows.push({ type: '', setting: '' })}>+ Grinder</button>
+						<button type="button" class="ghost add-row" onclick={() => { grindRows.push({ type: '', setting: '' }); markDirty(); }}>+ Grinder</button>
 						{#if errors.grinds}<span class="form-error">{errors.grinds}</span>{/if}
 					</fieldset>
 				</section>
@@ -230,15 +269,26 @@
 			{#if dialin}
 				<form method="POST" action="?/delete" use:enhance={deleteHandler} class="delete-form">
 					<input type="hidden" name="id" value={dialin.id} />
-					<button class="danger">Delete this dial-in</button>
+					{#if deleteArmed}
+						<div class="delete-confirm">
+							<button class="danger-solid" disabled={deleting}>
+								{deleting ? 'Deleting…' : 'Delete permanently'}
+							</button>
+							<button type="button" class="ghost" onclick={() => (deleteArmed = false)}>Keep</button>
+						</div>
+					{:else}
+						<button class="danger">Delete this dial-in</button>
+					{/if}
 				</form>
 			{/if}
 		</div>
 
 		<footer class="drawer-actions">
-			<button type="button" class="ghost cancel" onclick={() => (open = false)}>Cancel</button>
-			<button type="submit" form="dialin-editor-form" class="primary">
-				{dialin ? 'Save changes' : 'Add dial-in'}
+			<button type="button" class="ghost cancel" class:discard={confirmDiscard} onclick={requestClose}>
+				{confirmDiscard ? 'Discard changes?' : 'Cancel'}
+			</button>
+			<button type="submit" form="dialin-editor-form" class="primary" disabled={saving}>
+				{saving ? 'Saving…' : dialin ? 'Save changes' : 'Add dial-in'}
 			</button>
 		</footer>
 	{/key}
@@ -547,6 +597,33 @@
 		font-size: 0.85rem;
 	}
 
+	.delete-confirm {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 0.65rem;
+	}
+
+	.danger-solid {
+		background: var(--danger);
+		color: var(--bg);
+		border: none;
+		border-radius: 8px;
+		padding: 0.5rem 1rem;
+		font-size: 0.85rem;
+		font-weight: 600;
+	}
+
+	.cancel.discard {
+		border-color: var(--danger);
+		color: var(--danger);
+	}
+
+	button:disabled {
+		opacity: 0.6;
+		cursor: default;
+	}
+
 	.form-error {
 		display: block;
 		color: var(--danger);
@@ -622,7 +699,8 @@
 		}
 
 		.add-row,
-		.danger {
+		.danger,
+		.danger-solid {
 			min-height: 44px;
 		}
 

@@ -2,6 +2,16 @@
 	import { enhance } from '$app/forms';
 
 	let { form } = $props();
+
+	let signingIn = $state(false);
+
+	function submitHandler() {
+		signingIn = true;
+		return async ({ update }) => {
+			await update();
+			signingIn = false;
+		};
+	}
 </script>
 
 <svelte:head>
@@ -10,13 +20,13 @@
 
 <main>
 	<h1>Sign in</h1>
-	<form method="POST" action="?/login" use:enhance>
+	<form method="POST" action="?/login" use:enhance={submitHandler}>
 		<label>
 			Password
 			<input type="password" name="password" required autocomplete="current-password" />
 		</label>
 		{#if form?.message}<p class="form-error" role="alert">{form.message}</p>{/if}
-		<button>Sign in</button>
+		<button disabled={signingIn}>{signingIn ? 'Signing in…' : 'Sign in'}</button>
 	</form>
 	<a href="/">← Back to Kohi</a>
 </main>
@@ -73,6 +83,11 @@
 		font-weight: 600;
 		font-size: 0.9rem;
 		cursor: pointer;
+	}
+
+	button:disabled {
+		opacity: 0.6;
+		cursor: default;
 	}
 
 	.form-error {
