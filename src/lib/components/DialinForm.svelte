@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { untrack } from 'svelte';
 
-	let { open = $bindable(false), dialin = null, grinderNames = [] } = $props();
+	let { open = $bindable(false), dialin = null, grinderNames = [], lastGrinder = '' } = $props();
 
 	let dialogEl = $state(null);
 	let method = $state('espresso');
@@ -31,7 +31,7 @@
 		beanName = dialin?.bean ?? '';
 		grindRows = dialin?.grinds?.length
 			? dialin.grinds.map(g => ({ type: g.type ?? '', setting: g.setting }))
-			: [{ type: '', setting: '' }];
+			: [{ type: dialin ? '' : lastGrinder, setting: '' }];
 		pourRows = dialin?.pours?.length
 			? dialin.pours.map(p => ({ water_g: p.water_g, time_s: p.time_s, notes: p.notes ?? '' }))
 			: [];

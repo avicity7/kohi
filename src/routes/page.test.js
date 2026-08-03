@@ -114,7 +114,7 @@ test('mobile header keeps account actions beside the title', () => {
 	assert.equal(mobileActions['grid-row'], '1');
 	assert.equal(mobileActions['justify-self'], 'end');
 
-	const search = declarations(classRule(phone.block.children, 'search'));
+	const search = declarations(classRule(phone.block.children, 'search-wrap'));
 	assert.equal(search['grid-column'], '1 / -1');
 	assert.equal(search['grid-row'], '2');
 
