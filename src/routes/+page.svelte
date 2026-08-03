@@ -1,9 +1,22 @@
 <script>
 	import { getGrinds, formatRange, filterEntries, getGrinderNames, formatRelativeDate } from '$lib';
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
 	import DialinForm from '$lib/components/DialinForm.svelte';
 
 	let { data } = $props();
+
+	let view = $state('cards');
+
+	onMount(() => {
+		const stored = localStorage.getItem('kohi:view');
+		if (stored === 'compact' || stored === 'cards') view = stored;
+	});
+
+	function setView(next) {
+		view = next;
+		localStorage.setItem('kohi:view', next);
+	}
 
 	let drawerOpen = $state(false);
 	let editing = $state(null);
@@ -114,7 +127,7 @@
 
 <svelte:window onkeydown={handleKeydown} bind:scrollY={scrollY} />
 
-<main>
+<main class:wide={view === 'compact'}>
 	<header class="site-header" class:scrolled>
 		<div class="site-title">
 			<h1>Kohi</h1>
@@ -138,7 +151,7 @@
 				<a class="chip auth-chip" href="/login">Sign in</a>
 			{/if}
 		</div>
-		{#if methods.length > 1 || grinderNames.length > 0}
+		{#if methods.length > 1 || grinderNames.length > 0 || data.dialins.length > 0}
 			<div class="chips" role="group" aria-label="Quick filters">
 				{#if methods.length > 1}
 					{#each methods as method}
@@ -162,6 +175,26 @@
 						{grinder}
 					</button>
 				{/each}
+				{#if data.dialins.length > 0}
+					<div class="view-toggle" role="group" aria-label="Layout">
+						<button
+							class="chip"
+							class:active={view === 'cards'}
+							aria-pressed={view === 'cards'}
+							onclick={() => setView('cards')}
+						>
+							Cards
+						</button>
+						<button
+							class="chip"
+							class:active={view === 'compact'}
+							aria-pressed={view === 'compact'}
+							onclick={() => setView('compact')}
+						>
+							Table
+						</button>
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</header>
@@ -173,6 +206,58 @@
 	{#if espresso.length > 0}
 		<section>
 			<h2>Espresso <span class="count">{espresso.length}</span></h2>
+			{#if view === 'compact'}
+				<div class="table-wrap">
+					<table>
+						<thead>
+							<tr>
+								<th scope="col" class="td-bean">Bean</th>
+								<th scope="col">Dose</th>
+								<th scope="col">Yield</th>
+								<th scope="col">Ratio</th>
+								<th scope="col">Time</th>
+								<th scope="col">Grind</th>
+								<th scope="col">Temp</th>
+								<th scope="col">Updated</th>
+								{#if data.authed}<th scope="col"><span class="sr-only">Edit</span></th>{/if}
+							</tr>
+						</thead>
+						<tbody>
+							{#each espresso as entry}
+								{@const grinds = getGrinds(entry)}
+								<tr>
+									<th scope="row" class="td-bean">
+										<span class="row-roaster">{entry.roaster}</span>
+										<span class="row-bean">{entry.bean}</span>
+									</th>
+									<td>{entry.dose_g != null ? `${entry.dose_g}g` : '—'}</td>
+									<td>{entry.yield_g != null ? `${entry.yield_g}g` : '—'}</td>
+									<td>
+										{entry.dose_g != null && entry.yield_g != null
+											? calculateRatio(entry.dose_g, entry.yield_g)
+											: '—'}
+									</td>
+									<td>{entry.time_s != null ? formatTime(entry.time_s) : '—'}</td>
+									<td class="td-grind">
+										{grinds.length
+											? grinds
+													.map(g => (g.type ? `${g.type} ${formatRange(g.setting)}` : formatRange(g.setting)))
+													.join(' · ')
+											: '—'}
+									</td>
+									<td>{entry.temperature_c ? `${entry.temperature_c}°C` : '—'}</td>
+									<td class="td-updated">{formatRelativeDate(entry.updated_at ?? entry.created_at)}</td>
+									{#if data.authed}
+										<td class="td-edit">
+											<button class="edit-btn" aria-label="Edit {entry.bean}" onclick={() => openEdit(entry)}>✎</button>
+										</td>
+									{/if}
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{:else}
 			{#each espresso as entry}
 				{@const grinds = getGrinds(entry)}
 				{@const stamp = recencyLabel(entry)}
@@ -242,12 +327,62 @@
 					{#if stamp}<p class="updated">{stamp}</p>{/if}
 				</article>
 			{/each}
+			{/if}
 		</section>
 	{/if}
 
 	{#if pourover.length > 0}
 		<section>
 			<h2>Pour Over <span class="count">{pourover.length}</span></h2>
+			{#if view === 'compact'}
+				<div class="table-wrap">
+					<table>
+						<thead>
+							<tr>
+								<th scope="col" class="td-bean">Bean</th>
+								<th scope="col">Dose</th>
+								<th scope="col">Water</th>
+								<th scope="col">Brewer</th>
+								<th scope="col">Grind</th>
+								<th scope="col">Temp</th>
+								<th scope="col">Time</th>
+								<th scope="col">Updated</th>
+								{#if data.authed}<th scope="col"><span class="sr-only">Edit</span></th>{/if}
+							</tr>
+						</thead>
+						<tbody>
+							{#each pourover as entry}
+								{@const grinds = getGrinds(entry)}
+								{@const total = getTotalTime(entry)}
+								<tr>
+									<th scope="row" class="td-bean">
+										<span class="row-roaster">{entry.roaster}</span>
+										<span class="row-bean">{entry.bean}</span>
+									</th>
+									<td>{entry.dose_g != null ? `${entry.dose_g}g` : '—'}</td>
+									<td>{entry.water_g != null ? `${entry.water_g}g` : '—'}</td>
+									<td>{entry.brewer ?? '—'}</td>
+									<td class="td-grind">
+										{grinds.length
+											? grinds
+													.map(g => (g.type ? `${g.type} ${formatRange(g.setting)}` : formatRange(g.setting)))
+													.join(' · ')
+											: '—'}
+									</td>
+									<td>{entry.temperature_c ? `${entry.temperature_c}°C` : '—'}</td>
+									<td>{total != null ? formatTime(total) : '—'}</td>
+									<td class="td-updated">{formatRelativeDate(entry.updated_at ?? entry.created_at)}</td>
+									{#if data.authed}
+										<td class="td-edit">
+											<button class="edit-btn" aria-label="Edit {entry.bean}" onclick={() => openEdit(entry)}>✎</button>
+										</td>
+									{/if}
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{:else}
 			{#each pourover as entry}
 				{@const grinds = getGrinds(entry)}
 				{@const stamp = recencyLabel(entry)}
@@ -365,6 +500,7 @@
 					{#if stamp}<p class="updated">{stamp}</p>{/if}
 				</article>
 			{/each}
+			{/if}
 		</section>
 	{/if}
 </main>
@@ -376,6 +512,10 @@
 		max-width: 680px;
 		margin: 0 auto;
 		padding: 0 1.5rem 4rem;
+	}
+
+	main.wide {
+		max-width: 60rem;
 	}
 
 	/* Sticky site header */
@@ -490,6 +630,111 @@
 		border-color: var(--accent);
 		background: color-mix(in srgb, var(--accent) 12%, var(--surface));
 		color: var(--accent);
+	}
+
+	.view-toggle {
+		margin-left: auto;
+		display: flex;
+		gap: 0.4rem;
+	}
+
+	@media (max-width: 760px) {
+		.view-toggle {
+			display: none;
+		}
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	/* Compact comparison table */
+	.table-wrap {
+		overflow-x: auto;
+		background: var(--surface);
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		box-shadow: var(--shadow);
+	}
+
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		font-family: var(--sans);
+		font-size: 0.88rem;
+	}
+
+	thead th {
+		text-align: left;
+		font-size: 0.72rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.09em;
+		color: var(--ink-muted);
+		padding: 0.75rem 0.9rem;
+		border-bottom: 1px solid var(--line);
+		white-space: nowrap;
+	}
+
+	tbody th,
+	tbody td {
+		text-align: left;
+		padding: 0.7rem 0.9rem;
+		border-bottom: 1px solid var(--line-soft);
+		font-weight: 500;
+		font-variant-numeric: tabular-nums;
+		color: var(--ink);
+		white-space: nowrap;
+		vertical-align: top;
+	}
+
+	tbody tr:last-child th,
+	tbody tr:last-child td {
+		border-bottom: none;
+	}
+
+	tbody tr:hover {
+		background: color-mix(in srgb, var(--accent) 5%, transparent);
+	}
+
+	.td-bean {
+		white-space: normal;
+		min-width: 11rem;
+	}
+
+	.row-roaster {
+		display: block;
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--accent);
+		margin-bottom: 0.15rem;
+	}
+
+	.row-bean {
+		font-family: var(--serif);
+		font-size: 1rem;
+		font-weight: 600;
+	}
+
+	.td-grind {
+		white-space: normal;
+	}
+
+	.td-updated {
+		color: var(--ink-muted);
+		font-size: 0.8rem;
+	}
+
+	.td-edit {
+		text-align: right;
 	}
 
 	.empty {

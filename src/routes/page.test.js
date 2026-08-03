@@ -62,6 +62,35 @@ test('cards carry a recency stamp', () => {
 	assert.ok(elementWithClass(card, 'updated'));
 });
 
+test('view toggle offers cards and a comparison table', () => {
+	const toggle = elementWithClass(component.html, 'view-toggle');
+	assert.ok(toggle);
+
+	const buttons = [];
+	visit(toggle, node => {
+		if (node.type === 'Element' && node.name === 'button') buttons.push(node);
+		return false;
+	});
+	assert.equal(buttons.length, 2);
+	for (const button of buttons) {
+		assert.ok(button.attributes.some(a => a.type === 'Attribute' && a.name === 'aria-pressed'));
+	}
+
+	const headers = [];
+	visit(component.html, node => {
+		if (node.type === 'Element' && node.name === 'th') {
+			visit(node, item => {
+				if (item.type === 'Text') headers.push(item.data.trim());
+				return false;
+			});
+		}
+		return false;
+	});
+	for (const column of ['Dose', 'Yield', 'Ratio', 'Time', 'Grind', 'Updated']) {
+		assert.ok(headers.includes(column), `missing table column ${column}`);
+	}
+});
+
 test('mobile header keeps account actions beside the title', () => {
 	const actions = elementWithClass(component.html, 'header-actions');
 	assert.ok(actions);
