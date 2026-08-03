@@ -8,10 +8,18 @@
 	let { data } = $props();
 
 	let view = $state('cards');
+	let wideViewport = $state(false);
+	// The table needs room; below the toggle's own breakpoint always fall back to cards.
+	const effectiveView = $derived(view === 'compact' && wideViewport ? 'compact' : 'cards');
 
 	onMount(() => {
 		const stored = localStorage.getItem('kohi:view');
 		if (stored === 'compact' || stored === 'cards') view = stored;
+		const mq = window.matchMedia('(min-width: 760px)');
+		wideViewport = mq.matches;
+		const onChange = event => (wideViewport = event.matches);
+		mq.addEventListener('change', onChange);
+		return () => mq.removeEventListener('change', onChange);
 	});
 
 	function setView(next) {
@@ -136,7 +144,7 @@
 
 <svelte:window onkeydown={handleKeydown} bind:scrollY={scrollY} />
 
-<main class:wide={view === 'compact'}>
+<main class:wide={effectiveView === 'compact'}>
 	<header class="site-header" class:scrolled>
 		<div class="site-title">
 			<img class="site-mark" src={favicon} alt="" width="30" height="30" />
@@ -234,7 +242,7 @@
 	{#if espresso.length > 0}
 		<section>
 			<h2>Espresso <span class="count">{espresso.length}</span></h2>
-			{#if view === 'compact'}
+			{#if effectiveView === 'compact'}
 				<div class="table-wrap">
 					<table>
 						<thead>
@@ -362,7 +370,7 @@
 	{#if pourover.length > 0}
 		<section>
 			<h2>Pour Over <span class="count">{pourover.length}</span></h2>
-			{#if view === 'compact'}
+			{#if effectiveView === 'compact'}
 				<div class="table-wrap">
 					<table>
 						<thead>
