@@ -36,6 +36,8 @@
 	const filtering = $derived(query.trim() !== '' || methodFilter !== null || grinderFilter !== null);
 
 	let searchEl = $state(null);
+	let scrollY = $state(0);
+	const scrolled = $derived(scrollY > 16);
 
 	function handleKeydown(event) {
 		if (event.key !== '/') return;
@@ -110,10 +112,10 @@
 	<title>Kohi · Coffee Dial-In Log</title>
 </svelte:head>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} bind:scrollY={scrollY} />
 
 <main>
-	<header class="site-header">
+	<header class="site-header" class:scrolled>
 		<div class="site-title">
 			<h1>Kohi</h1>
 			<p class="subtitle">Coffee Dial-In Log</p>
@@ -391,6 +393,12 @@
 		background: color-mix(in srgb, var(--bg) 85%, transparent);
 		-webkit-backdrop-filter: blur(10px);
 		backdrop-filter: blur(10px);
+		border-bottom: 1px solid transparent;
+		transition: border-color 0.2s ease;
+	}
+
+	.site-header.scrolled {
+		border-bottom-color: var(--line-soft);
 	}
 
 	@supports not (backdrop-filter: blur(10px)) {
@@ -805,6 +813,27 @@
 
 		.params {
 			grid-template-columns: repeat(2, 1fr);
+		}
+
+		.site-title,
+		.header-actions {
+			max-height: 3.5rem;
+		}
+
+		.site-header.scrolled .site-title,
+		.site-header.scrolled .header-actions {
+			max-height: 0;
+			opacity: 0;
+			overflow: hidden;
+			margin: 0;
+			pointer-events: none;
+		}
+	}
+
+	@media (max-width: 520px) and (prefers-reduced-motion: no-preference) {
+		.site-title,
+		.header-actions {
+			transition: max-height 0.2s ease, opacity 0.15s ease;
 		}
 	}
 
