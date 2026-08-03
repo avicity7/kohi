@@ -408,7 +408,7 @@
 
 	.subtitle {
 		font-family: var(--sans);
-		font-size: 0.68rem;
+		font-size: 0.72rem;
 		font-weight: 500;
 		text-transform: uppercase;
 		letter-spacing: 0.14em;
@@ -426,7 +426,6 @@
 		font-family: var(--sans);
 		font-size: 0.9rem;
 		color: var(--ink);
-		outline: none;
 		transition: border-color 0.15s ease;
 	}
 
@@ -435,7 +434,15 @@
 	}
 
 	.search:focus {
+		outline: none;
 		border-color: var(--accent);
+	}
+
+	.search:focus-visible,
+	.chip:focus-visible,
+	.edit-btn:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
 	}
 
 	.header-actions {
@@ -575,7 +582,7 @@
 
 	.label {
 		font-family: var(--sans);
-		font-size: 0.68rem;
+		font-size: 0.72rem;
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.09em;
@@ -624,7 +631,7 @@
 
 	.notes-label {
 		font-family: var(--sans);
-		font-size: 0.68rem;
+		font-size: 0.72rem;
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.09em;
@@ -661,7 +668,7 @@
 
 	.pour-schedule-label {
 		font-family: var(--sans);
-		font-size: 0.68rem;
+		font-size: 0.72rem;
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.09em;

@@ -345,7 +345,7 @@
 	}
 
 	label {
-		font-size: 0.7rem;
+		font-size: 0.72rem;
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.09em;
@@ -361,7 +361,7 @@
 		padding: 0.5rem 0.7rem;
 		border: 1px solid var(--line);
 		border-radius: 8px;
-		background: var(--bg);
+		background: var(--field);
 		color: var(--ink);
 		font-family: var(--sans);
 		font-size: 0.95rem;
@@ -543,13 +543,13 @@
 	.danger {
 		background: none;
 		border: none;
-		color: #b3382c;
+		color: var(--danger);
 		font-size: 0.85rem;
 	}
 
 	.form-error {
 		display: block;
-		color: #b3382c;
+		color: var(--danger);
 		font-size: 0.8rem;
 		text-transform: none;
 		letter-spacing: normal;
@@ -557,7 +557,7 @@
 	}
 
 	.banner {
-		border: 1px solid color-mix(in srgb, #b3382c 40%, var(--line));
+		border: 1px solid color-mix(in srgb, var(--danger) 40%, var(--line));
 		border-radius: 8px;
 		padding: 0.6rem 0.8rem;
 		margin: 0 0 1rem;

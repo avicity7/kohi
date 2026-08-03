@@ -52,7 +52,7 @@
 		padding: 0.55rem 0.85rem;
 		border: 1px solid var(--line);
 		border-radius: 8px;
-		background: var(--surface);
+		background: var(--field);
 		color: var(--ink);
 		font-size: 1rem;
 	}
@@ -76,7 +76,7 @@
 	}
 
 	.form-error {
-		color: #b3382c;
+		color: var(--danger);
 		font-size: 0.85rem;
 		margin: 0.75rem 0 0;
 	}

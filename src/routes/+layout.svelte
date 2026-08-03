@@ -17,10 +17,12 @@
 		--surface: #ffffff;
 		--ink: #23201b;
 		--ink-soft: #5c564d;
-		--ink-muted: #86806f;
+		--ink-muted: #6c6659;
 		--line: #e4dfd4;
 		--line-soft: #eeeae0;
 		--accent: #7c5335;
+		--danger: #b3382c;
+		--field: #f6f4ef;
 		--shadow: 0 1px 2px rgba(35, 32, 27, 0.04), 0 4px 12px rgba(35, 32, 27, 0.03);
 		--serif: 'Source Serif 4', Georgia, serif;
 		--sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -32,10 +34,12 @@
 			--surface: #211d18;
 			--ink: #ece7dd;
 			--ink-soft: #b3ab9c;
-			--ink-muted: #8a8171;
+			--ink-muted: #98907e;
 			--line: #37312a;
 			--line-soft: #2b2621;
 			--accent: #c99e6e;
+			--danger: #e5766a;
+			--field: #2a251e;
 			--shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
 		}
 	}
@@ -46,5 +50,10 @@
 		font-family: var(--serif);
 		color: var(--ink);
 		-webkit-font-smoothing: antialiased;
+	}
+
+	:global(:focus-visible) {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
 	}
 </style>
