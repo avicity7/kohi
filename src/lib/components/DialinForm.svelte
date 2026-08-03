@@ -329,6 +329,50 @@
 		background: rgba(0, 0, 0, 0.35);
 	}
 
+	@media (prefers-reduced-motion: no-preference) {
+		.drawer {
+			transition:
+				translate 0.22s ease,
+				opacity 0.22s ease,
+				display 0.22s allow-discrete,
+				overlay 0.22s allow-discrete;
+		}
+
+		.drawer:not([open]) {
+			translate: 100% 0;
+			opacity: 0;
+		}
+
+		.drawer[open] {
+			translate: 0 0;
+			opacity: 1;
+		}
+
+		@starting-style {
+			.drawer[open] {
+				translate: 100% 0;
+				opacity: 0;
+			}
+		}
+
+		.drawer::backdrop {
+			transition:
+				background 0.22s ease,
+				display 0.22s allow-discrete,
+				overlay 0.22s allow-discrete;
+		}
+
+		.drawer:not([open])::backdrop {
+			background: rgba(0, 0, 0, 0);
+		}
+
+		@starting-style {
+			.drawer[open]::backdrop {
+				background: rgba(0, 0, 0, 0);
+			}
+		}
+	}
+
 	.drawer-header {
 		display: flex;
 		align-items: center;
