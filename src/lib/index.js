@@ -41,3 +41,21 @@ export function filterEntries(entries, { query = '', method = null, grinder = nu
 export function getGrinds(entry) {
 	return entry.grinds ?? [];
 }
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DAY_MS = 86400000;
+
+// UTC calendar days keep the label identical between server render and hydration.
+export function formatRelativeDate(value, now = new Date()) {
+	if (!value) return '';
+	const then = value instanceof Date ? value : new Date(value);
+	if (Number.isNaN(then.getTime())) return '';
+	const days = Math.floor(now.getTime() / DAY_MS) - Math.floor(then.getTime() / DAY_MS);
+	if (days <= 0) return 'today';
+	if (days === 1) return 'yesterday';
+	if (days < 7) return `${days}d ago`;
+	if (days < 56) return `${Math.floor(days / 7)}w ago`;
+	if (then.getUTCFullYear() === now.getUTCFullYear())
+		return `${then.getUTCDate()} ${MONTHS[then.getUTCMonth()]}`;
+	return `${MONTHS[then.getUTCMonth()]} ${then.getUTCFullYear()}`;
+}

@@ -20,7 +20,7 @@ function fromRow(row) {
 }
 
 export async function listDialins() {
-	const rows = await sql()`SELECT * FROM dialins ORDER BY created_at DESC, id DESC`;
+	const rows = await sql()`SELECT * FROM dialins ORDER BY updated_at DESC, id DESC`;
 	return rows.map(fromRow);
 }
 

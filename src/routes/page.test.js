@@ -56,6 +56,12 @@ function elementWithClass(node, name) {
 	return visit(node, item => item.type === 'Element' && elementClasses(item).includes(name));
 }
 
+test('cards carry a recency stamp', () => {
+	const card = elementWithClass(component.html, 'card');
+	assert.ok(card);
+	assert.ok(elementWithClass(card, 'updated'));
+});
+
 test('mobile header keeps account actions beside the title', () => {
 	const actions = elementWithClass(component.html, 'header-actions');
 	assert.ok(actions);

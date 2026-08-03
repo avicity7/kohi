@@ -1,5 +1,5 @@
 <script>
-	import { getGrinds, formatRange, filterEntries, getGrinderNames } from '$lib';
+	import { getGrinds, formatRange, filterEntries, getGrinderNames, formatRelativeDate } from '$lib';
 	import { enhance } from '$app/forms';
 	import DialinForm from '$lib/components/DialinForm.svelte';
 
@@ -70,6 +70,16 @@
 	function calculateRatio(dose, yield_) {
 		const ratio = yield_ / dose;
 		return `1:${ratio.toFixed(1)}`;
+	}
+
+	function recencyLabel(entry) {
+		const stamp = formatRelativeDate(entry.updated_at ?? entry.created_at);
+		if (!stamp) return '';
+		const changed =
+			entry.created_at &&
+			entry.updated_at &&
+			new Date(entry.updated_at).getTime() !== new Date(entry.created_at).getTime();
+		return `${changed ? 'Updated' : 'Added'} ${stamp}`;
 	}
 
 	function getTotalTime(entry) {
@@ -163,6 +173,7 @@
 			<h2>Espresso <span class="count">{espresso.length}</span></h2>
 			{#each espresso as entry}
 				{@const grinds = getGrinds(entry)}
+				{@const stamp = recencyLabel(entry)}
 				<article class="card">
 					<div class="card-header">
 						<div class="card-title">
@@ -226,6 +237,7 @@
 							<p class="notes-text">{entry.notes}</p>
 						</div>
 					{/if}
+					{#if stamp}<p class="updated">{stamp}</p>{/if}
 				</article>
 			{/each}
 		</section>
@@ -236,6 +248,7 @@
 			<h2>Pour Over <span class="count">{pourover.length}</span></h2>
 			{#each pourover as entry}
 				{@const grinds = getGrinds(entry)}
+				{@const stamp = recencyLabel(entry)}
 				<article class="card">
 					<div class="card-header">
 						<div class="card-title">
@@ -347,6 +360,7 @@
 							<p class="notes-text">{entry.notes}</p>
 						</div>
 					{/if}
+					{#if stamp}<p class="updated">{stamp}</p>{/if}
 				</article>
 			{/each}
 		</section>
@@ -627,6 +641,13 @@
 		font-style: italic;
 		line-height: 1.55;
 		color: var(--ink-soft);
+	}
+
+	.updated {
+		margin: 1.1rem 0 0;
+		font-family: var(--sans);
+		font-size: 0.72rem;
+		color: var(--ink-muted);
 	}
 
 	/* Pour schedule */
